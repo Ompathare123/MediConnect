@@ -4,25 +4,26 @@ const userSchema = new mongoose.Schema(
   {
     name: {
       type: String,
-      required: true,
+      required: true
     },
-
     email: {
       type: String,
       required: true,
       unique: true,
+      lowercase: true
     },
-
     password: {
       type: String,
-      required: true,
+      required: true
     },
-
+    phone: String,
+    gender: String,
+    address: String,
     role: {
       type: String,
-      enum: ["patient", "doctor", "admin"],
-      default: "patient",
-    },
+      enum: ["admin", "doctor", "patient"],
+      default: "patient"
+    }
   },
   { timestamps: true }
 );

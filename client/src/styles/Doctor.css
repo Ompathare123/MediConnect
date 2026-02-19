@@ -1,0 +1,42 @@
+/* Doctor.css */
+
+/* Custom scrollbar for main content */
+.overflow-y-auto::-webkit-scrollbar {
+  width: 6px;
+}
+
+.overflow-y-auto::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.overflow-y-auto::-webkit-scrollbar-thumb {
+  background: #E2E8F0;
+  border-radius: 10px;
+}
+
+.overflow-y-auto::-webkit-scrollbar-thumb:hover {
+  background: #CBD5E1;
+}
+
+/* Ensure smooth transitions for sidebar collapse */
+.transition-all {
+  transition-property: all;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 300ms;
+}
+
+/* Specific button styling not covered by Tailwind easily */
+.btn-icon:hover svg {
+  color: #2563eb;
+}
+
+.patient-cell {
+  font-weight: 700 !important;
+}
+
+/* Table responsiveness adjustments */
+@media (max-width: 768px) {
+    .p-8 {
+        padding: 1.5rem;
+    }
+}

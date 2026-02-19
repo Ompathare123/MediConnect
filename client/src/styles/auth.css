@@ -1,0 +1,140 @@
+/* Full Page */
+.login-page {
+  height: 100vh;
+  width: 100vw;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Dark Overlay */
+.overlay {
+  height: 100%;
+  width: 100%;
+  background: rgba(0, 0, 0, 0.4); /* Slightly lighter overlay */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Login/Register Card */
+.login-card {
+  width: 450px;
+  max-height: 90vh; /* Prevents card from going off-screen */
+  padding: 40px;
+  border-radius: 25px;
+  background: rgba(225, 240, 255, 0.8); /* Light blue tinted glass */
+  text-align: center;
+  border: 4px solid #82c3f8; /* Softer blue border */
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  overflow-y: auto; /* Makes the register form scrollable if needed */
+}
+
+/* Custom Scrollbar for the card */
+.login-card::-webkit-scrollbar {
+  width: 6px;
+}
+.login-card::-webkit-scrollbar-thumb {
+  background: #2196f3;
+  border-radius: 10px;
+}
+
+/* Title */
+.login-card h2 {
+  margin-bottom: 25px;
+  color: #1a5f96; /* Darker blue for contrast */
+  font-size: 32px;
+  font-weight: 700;
+}
+
+/* Form Styling */
+.login-card form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+/* Inputs, Select, and Textarea */
+.login-card input, 
+.login-card select, 
+.login-card textarea {
+  width: 100%;
+  padding: 14px;
+  border-radius: 12px;
+  border: 1px solid #aad4f5;
+  outline: none;
+  font-size: 16px;
+  background: white;
+  box-sizing: border-box; /* Crucial for padding */
+  transition: 0.3s;
+}
+
+.login-card input:focus, 
+.login-card select:focus, 
+.login-card textarea:focus {
+  border-color: #2196f3;
+  box-shadow: 0 0 8px rgba(33, 150, 243, 0.3);
+}
+
+.login-card textarea {
+  height: 100px;
+  resize: none;
+}
+
+/* Checkbox Container */
+.terms-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 10px 0;
+  font-size: 14px;
+  color: #444;
+}
+
+.terms-container input {
+  width: auto;
+  margin: 0;
+}
+
+/* Button */
+.login-card button {
+  width: 100%;
+  padding: 14px;
+  margin-top: 10px;
+  border-radius: 12px;
+  border: none;
+  font-size: 18px;
+  font-weight: 600;
+  cursor: pointer;
+  color: white;
+  background: linear-gradient(135deg, #2196f3 0%, #0d47a1 100%);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.login-card button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(33, 150, 243, 0.4);
+}
+
+/* Footer Text */
+.register-text {
+  margin-top: 20px;
+  font-size: 15px;
+  color: #333;
+}
+
+.register-text a {
+  color: #1e88e5;
+  text-decoration: none;
+  font-weight: bold;
+}
+
+.register-text a:hover {
+  text-decoration: underline;
+}
