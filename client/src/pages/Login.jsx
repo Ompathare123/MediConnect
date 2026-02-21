@@ -33,14 +33,15 @@ function Login() {
         return;
       }
 
+      // 1. Save all necessary session data
       localStorage.setItem("token", data.token);
       localStorage.setItem("role", data.role);
-     localStorage.setItem("userName", data.user.name);
+      // Using optional chaining to prevent errors if data.user is missing
+      localStorage.setItem("userName", data.user?.name || "User");
 
-
-
+      // 2. Redirect based on the role provided by authController.js
       if (data.role === "doctor") {
-        navigate("/doctor-dashboard");
+        navigate("/doctor-dashboard"); // This will open the new Doctor Panel
       } else if (data.role === "admin") {
         navigate("/admin");
       } else {
