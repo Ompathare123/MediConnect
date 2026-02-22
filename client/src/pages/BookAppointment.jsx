@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   FaBars, FaTachometerAlt, FaCalendarPlus, FaCalendarCheck, FaFileMedical,
@@ -20,7 +20,6 @@ const doctorData = [
 
 const BookAppointmentPage = () => {
   const navigate = useNavigate();
-  const fileInputRef = useRef(null); // Ref for file upload
   const [isCollapsed, setIsCollapsed] = useState(true);
   const [successMessage, setSuccessMessage] = useState(false);
 
@@ -29,8 +28,6 @@ const BookAppointmentPage = () => {
 
   const [formData, setFormData] = useState({ 
     patientName: userName, 
-    age: '',
-    bloodGroup: '',
     department: '', 
     doctorId: '', 
     appointmentDate: '', 
@@ -41,15 +38,15 @@ const BookAppointmentPage = () => {
   });
   const [selectedDoctor, setSelectedDoctor] = useState(null);
 
-  // Separated menu items to handle the logout positioning
-  const mainMenuItems = [
+  const menuItems = [
     { icon: FaTachometerAlt, label: "Dashboard", path: "/patient-dashboard" },
     { icon: FaCalendarPlus, label: "Book Appointment", active: true, path: "/book-appointment" },
     { icon: FaCalendarCheck, label: "My Appointments", path: "/appointments" },
     { icon: FaFileMedical, label: "Medical Records", path: "/records" },
     { icon: FaFilePrescription, label: "Prescriptions", path: "/prescriptions" },
     { icon: FaCreditCard, label: "Billing / Payments", path: "/billing" },
-    { icon: FaUser, label: "Profile", path: "/profile" }
+    { icon: FaUser, label: "Profile", path: "/profile" },
+    { icon: FaSignOutAlt, label: "Logout", path: "/" }
   ];
 
   useEffect(() => {
@@ -64,18 +61,6 @@ const BookAppointmentPage = () => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-        setFormData(prev => ({ ...prev, medicalReports: file }));
-        alert(`File selected: ${file.name}`);
-    }
-  };
-
-  const triggerFileUpload = () => {
-    fileInputRef.current.click();
-  };
-
   const handleBookAppointment = async (e) => {
     e.preventDefault();
     try {
@@ -87,9 +72,7 @@ const BookAppointmentPage = () => {
           doctorName: selectedDoctor?.name, 
           department: formData.department, 
           appointmentDate: formData.appointmentDate, 
-          timeSlot: formData.timeSlot,
-          age: formData.age,
-          bloodGroup: formData.bloodGroup
+          timeSlot: formData.timeSlot 
         })
       });
 
@@ -111,21 +94,19 @@ const BookAppointmentPage = () => {
   };
 
   return (
-    <div className="flex h-screen bg-[#F8FAFC] overflow-hidden text-left">
+    <div className="flex h-screen bg-[#F8FAFC] overflow-hidden">
       {/* Sidebar */}
       <div className={`${isCollapsed ? "w-20" : "w-64"} bg-gradient-to-b from-blue-600 to-blue-800 text-white min-h-screen shadow-2xl transition-all duration-300 ease-in-out flex flex-col z-50`}>
-        <div className="h-20 px-6 border-b border-blue-50 flex items-center justify-between shrink-0">
+        <div className="h-20 px-6 border-b border-blue-500 flex items-center justify-between shrink-0">
           {!isCollapsed && <h2 className="text-xl font-bold flex items-center space-x-3 whitespace-nowrap overflow-hidden"><span>MediConnect</span></h2>}
           <button onClick={() => setIsCollapsed(!isCollapsed)} className="p-2 hover:bg-white/20 rounded-lg transition-colors focus:outline-none">
             {isCollapsed ? <FaBars size={20} /> : <FaChevronLeft size={20} />}
           </button>
         </div>
-
-        {/* Main Nav Items Container */}
         <nav className="mt-6 px-3 space-y-2 flex-1">
-          {mainMenuItems.map((item, index) => (
+          {menuItems.map((item, index) => (
             <button key={index} 
-              onClick={() => navigate(item.path)}
+              onClick={() => item.label === "Logout" ? handleLogout() : navigate(item.path)}
               className={`w-full flex items-center ${isCollapsed ? "justify-center" : "space-x-3"} px-4 py-3 rounded-xl transition-all duration-200 ${item.active ? "bg-white/20 shadow-inner" : "hover:bg-white/10"}`}
               title={isCollapsed ? item.label : ""}
             >
@@ -134,22 +115,10 @@ const BookAppointmentPage = () => {
             </button>
           ))}
         </nav>
-
-        {/* Logout Button Container at Bottom */}
-        <div className="px-3 pb-6 border-t border-blue-500 pt-4">
-          <button 
-            onClick={handleLogout}
-            className={`w-full flex items-center ${isCollapsed ? "justify-center" : "space-x-3"} px-4 py-3 rounded-xl transition-all duration-200 hover:bg-red-500/20 text-red-100`}
-            title={isCollapsed ? "Logout" : ""}
-          >
-            <FaSignOutAlt size={20} />
-            {!isCollapsed && <span className="whitespace-nowrap font-medium">Logout</span>}
-          </button>
-        </div>
       </div>
 
       <div className="flex-1 flex flex-col h-full overflow-hidden">
-        {/* Navbar */}
+        {/* Navbar - Corrected Top Right Name Section */}
         <header className="h-20 bg-white shadow-sm border-b border-gray-100 px-8 flex justify-between items-center shrink-0 z-40">
           <h1 className="text-2xl font-bold text-blue-700">Book Appointment</h1>
           
@@ -159,6 +128,7 @@ const BookAppointmentPage = () => {
               <span className="absolute top-1 right-1 bg-red-500 text-white text-[10px] w-4 h-4 flex items-center justify-center rounded-full border-2 border-white">3</span>
             </div>
             
+            {/* DYNAMIC USER PROFILE SECTION */}
             <div className="flex items-center space-x-3 border-l pl-6 border-gray-100">
               <img 
                 src={`https://ui-avatars.com/api/?name=${userName}&background=random&color=fff`} 
@@ -181,32 +151,17 @@ const BookAppointmentPage = () => {
               <p className="text-slate-500 font-medium">Schedule your consultation with a specialist</p>
             </div>
 
-            <div className="grid lg:grid-cols-12 gap-8 items-start text-left">
+            <div className="grid lg:grid-cols-12 gap-8 items-start">
               {/* LEFT COLUMN: FORM */}
               <div className="lg:col-span-8 space-y-6">
                 <div className="bg-white rounded-3xl shadow-sm border border-gray-50 p-8 text-left">
                   <h3 className="text-xl font-bold text-gray-800 mb-6 border-b pb-4">Appointment Details</h3>
                   <form onSubmit={handleBookAppointment} className="space-y-6">
-                    <div className="grid md:grid-cols-3 gap-6 text-left">
+                    <div className="grid md:grid-cols-2 gap-6 text-left">
                       <div className="space-y-2">
                         <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Patient Name</label>
                         <input type="text" value={userName} className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-500 cursor-not-allowed font-medium" readOnly />
                       </div>
-                      <div className="space-y-2">
-                        <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Age *</label>
-                        <input type="number" name="age" value={formData.age} onChange={handleInputChange} className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none font-medium transition-all" placeholder="Years" required />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Blood Group *</label>
-                        <select name="bloodGroup" value={formData.bloodGroup} onChange={handleInputChange} className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none font-medium transition-all" required>
-                            <option value="">Select</option>
-                            <option>A+</option><option>A-</option><option>B+</option><option>B-</option>
-                            <option>O+</option><option>O-</option><option>AB+</option><option>AB-</option>
-                        </select>
-                      </div>
-                    </div>
-
-                    <div className="grid md:grid-cols-2 gap-6 text-left">
                       <div className="space-y-2">
                         <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Department *</label>
                         <select name="department" value={formData.department} onChange={handleInputChange} className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none font-medium transition-all" required>
@@ -218,6 +173,9 @@ const BookAppointmentPage = () => {
                           <option value="Orthopedics">Orthopedics</option>
                         </select>
                       </div>
+                    </div>
+
+                    <div className="grid md:grid-cols-2 gap-6 text-left">
                       <div className="space-y-2">
                         <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Select Doctor *</label>
                         <select name="doctorId" value={formData.doctorId} onChange={handleInputChange} className="w-full px-4 py-3 border border-gray-200 rounded-xl font-medium focus:ring-2 focus:ring-blue-500 outline-none transition-all" required disabled={!formData.department}>
@@ -227,20 +185,22 @@ const BookAppointmentPage = () => {
                           ))}
                         </select>
                       </div>
-                    </div>
-
-                    <div className="grid md:grid-cols-2 gap-6 text-left">
-                      <div className="space-y-2">
-                        <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Date *</label>
-                        <input type="date" name="appointmentDate" onChange={handleInputChange} className="w-full px-4 py-3 border border-gray-200 rounded-xl font-medium focus:ring-2 focus:ring-blue-500 outline-none transition-all" required />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Time Slot *</label>
-                        <select name="timeSlot" onChange={handleInputChange} className="w-full px-4 py-3 border border-gray-200 rounded-xl font-medium focus:ring-2 focus:ring-blue-500 outline-none transition-all" required>
-                          <option value="">Time</option>
-                          <option>09:00 AM</option><option>10:00 AM</option><option>11:00 AM</option>
-                          <option>02:00 PM</option><option>03:00 PM</option>
-                        </select>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Date *</label>
+                          <input type="date" name="appointmentDate" onChange={handleInputChange} className="w-full px-4 py-3 border border-gray-200 rounded-xl font-medium focus:ring-2 focus:ring-blue-500 outline-none transition-all" required />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Time *</label>
+                          <select name="timeSlot" onChange={handleInputChange} className="w-full px-4 py-3 border border-gray-200 rounded-xl font-medium focus:ring-2 focus:ring-blue-500 outline-none transition-all" required>
+                            <option value="">Time</option>
+                            <option>09:00 AM</option>
+                            <option>10:00 AM</option>
+                            <option>11:00 AM</option>
+                            <option>02:00 PM</option>
+                            <option>03:00 PM</option>
+                          </select>
+                        </div>
                       </div>
                     </div>
 
@@ -249,28 +209,15 @@ const BookAppointmentPage = () => {
                       <textarea name="symptoms" rows="4" value={formData.symptoms} onChange={handleInputChange} className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none resize-none font-medium transition-all" placeholder="Please describe your symptoms..."></textarea>
                     </div>
 
-                    {/* Report Upload Logic */}
-                    <div 
-                        onClick={triggerFileUpload}
-                        className="border-2 border-dashed border-blue-100 rounded-2xl p-8 text-center hover:bg-blue-50 transition-colors cursor-pointer group"
-                    >
-                      <input 
-                        type="file" 
-                        ref={fileInputRef} 
-                        onChange={handleFileChange} 
-                        className="hidden" 
-                        accept=".pdf,.jpg,.jpeg,.png"
-                      />
+                    <div className="border-2 border-dashed border-blue-100 rounded-2xl p-8 text-center hover:bg-blue-50 transition-colors cursor-pointer group">
                       <FaPaperclip className="mx-auto text-blue-400 text-2xl mb-2 group-hover:scale-110 transition-transform" />
-                      <p className="text-sm font-bold text-gray-700">
-                        {formData.medicalReports ? `Report: ${formData.medicalReports.name}` : "Upload Medical Reports"}
-                      </p>
+                      <p className="text-sm font-bold text-gray-700">Upload Medical Reports</p>
                       <p className="text-xs text-gray-400 mt-1 uppercase">PDF, JPG, PNG (Max 10MB)</p>
                     </div>
 
                     <div className="flex space-x-4 pt-4">
                       <button type="submit" className="flex-1 bg-blue-600 text-white font-black py-4 rounded-2xl shadow-xl hover:bg-blue-700 active:scale-[0.98] transition-all">Confirm Booking</button>
-                      <button type="reset" onClick={() => {setFormData({...formData, age: '', bloodGroup: '', symptoms: '', department: '', doctorId: ''}); setSelectedDoctor(null);}} className="px-8 py-4 border-2 border-gray-100 text-gray-400 font-bold rounded-2xl hover:bg-white hover:text-gray-600 transition-all">Reset</button>
+                      <button type="reset" onClick={() => {setFormData({...formData, symptoms: '', department: '', doctorId: ''}); setSelectedDoctor(null);}} className="px-8 py-4 border-2 border-gray-100 text-gray-400 font-bold rounded-2xl hover:bg-white hover:text-gray-600 transition-all">Reset</button>
                     </div>
                   </form>
                 </div>
@@ -303,12 +250,12 @@ const BookAppointmentPage = () => {
                       </div>
                     </>
                   ) : (
-                    <div className="py-12 text-center"><FaHospitalUser className="mx-auto text-blue-100 text-6xl mb-4" /><p className="text-gray-400 font-bold text-[11px] uppercase tracking-widest">Select doctor for details</p></div>
+                    <div className="py-12"><FaHospitalUser className="mx-auto text-blue-100 text-6xl mb-4" /><p className="text-gray-400 font-bold text-[11px] uppercase tracking-widest">Select doctor for details</p></div>
                   )}
                 </div>
 
-                <div className="bg-white rounded-3xl shadow-lg border border-gray-50 p-8 relative overflow-hidden text-left">
-                  <h3 className="text-xs font-black uppercase tracking-[0.2em] text-blue-600 mb-6 border-b border-gray-50 pb-4">Payment Summary</h3>
+                <div className="bg-white rounded-3xl shadow-lg border border-gray-50 p-8 relative overflow-hidden">
+                  <h3 className="text-xs font-black uppercase tracking-[0.2em] text-blue-600 mb-6 border-b border-gray-50 pb-4 text-left">Payment Summary</h3>
                   <div className="space-y-4 relative z-10">
                     <div className="flex justify-between items-center text-sm font-medium">
                       <span className="text-gray-400 font-bold uppercase text-[10px] tracking-wider">Consultation Fee</span>
