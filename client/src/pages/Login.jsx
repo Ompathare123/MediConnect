@@ -5,7 +5,6 @@ import doctorBg from "../assets/doctor.png";
 
 function Login() {
   const navigate = useNavigate();
-
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -29,19 +28,18 @@ function Login() {
       const data = await response.json();
 
       if (!response.ok) {
-        setError(data.message);
+        setError(data.message || "Invalid Email or Password");
         return;
       }
 
-      // 1. Save all necessary session data
+      // Store Auth data
       localStorage.setItem("token", data.token);
       localStorage.setItem("role", data.role);
-      // Using optional chaining to prevent errors if data.user is missing
       localStorage.setItem("userName", data.user?.name || "User");
 
-      // 2. Redirect based on the role provided by authController.js
+      // Redirect based on role
       if (data.role === "doctor") {
-        navigate("/doctor-dashboard"); // This will open the new Doctor Panel
+        navigate("/doctor-dashboard");
       } else if (data.role === "admin") {
         navigate("/admin");
       } else {
@@ -49,7 +47,7 @@ function Login() {
       }
 
     } catch (error) {
-      setError("Server error. Check backend connection.");
+      setError("Server error. Check if the backend is running on port 5000.");
     }
   };
 
@@ -60,8 +58,7 @@ function Login() {
           <h2>Sign In</h2>
 
           {error && (
-            <div
-              style={{
+            <div style={{
                 color: "#b91c1c",
                 backgroundColor: "#fee2e2",
                 padding: "8px",
@@ -69,8 +66,7 @@ function Login() {
                 marginBottom: "10px",
                 fontSize: "14px",
                 fontWeight: "500"
-              }}
-            >
+              }}>
               {error}
             </div>
           )}

@@ -1,10 +1,12 @@
 const express = require("express");
 const router = express.Router();
-// Destructure the exported functions from your controller
+// Importing functions from the authController
 const { registerUser, loginUser } = require("../controllers/authController");
 
-// Ensure these handlers are actual functions
+// POST /api/auth/register
 router.post("/register", registerUser);
+
+// POST /api/auth/login
 router.post("/login", loginUser); 
 
 module.exports = router;

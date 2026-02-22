@@ -1,9 +1,10 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import "../styles/auth.css";
 import doctorBg from "../assets/doctor.png";
 
 function Register() {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -14,6 +15,7 @@ function Register() {
   });
 
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
     setFormData({
@@ -22,59 +24,44 @@ function Register() {
     });
   };
 
-  const validateEmail = (email) => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-  };
-
-  const validatePhone = (phone) => {
-    const phoneRegex = /^[0-9]{10}$/; // exactly 10 digits
-    return phoneRegex.test(phone);
-  };
-
   const handleRegister = async (e) => {
     e.preventDefault();
     setError("");
-
-    // ✅ Email validation
-    if (!validateEmail(formData.email)) {
-      setError("Please enter a valid email address.");
-      return;
-    }
-
-    // ✅ Phone validation
-    if (!validatePhone(formData.phone)) {
-      setError("Phone number must contain exactly 10 digits.");
-      return;
-    }
+    setLoading(true);
 
     try {
-      const response = await fetch(
-        "http://localhost:5000/api/auth/register",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(formData),
-        }
-      );
+      const response = await fetch("http://localhost:5000/api/auth/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ...formData,
+          email: formData.email.toLowerCase(),
+          role: "patient" 
+        }),
+      });
 
       const data = await response.json();
 
       if (!response.ok) {
-        setError(data.message);
+        setError(data.message || "Registration failed");
+        setLoading(false);
         return;
       }
 
-      // ✅ POPUP AFTER SUCCESS
-      alert("Registration successful!");
-
-      // Redirect to login
-      window.location.href = "/login";
+      // --- POPUP LOGIC ---
+      // This will pause execution until the user clicks "OK"
+      alert("🎉 Registration Successful! You can now log in.");
+      
+      // Redirect to login after the user dismisses the alert
+      navigate("/login"); 
 
     } catch (err) {
-      setError("Server error. Check backend.");
+      console.error("Network or Server Error:", err);
+      setError("Cannot connect to server. Is your backend running on port 5000?");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -85,67 +72,38 @@ function Register() {
           <h2>Create Account</h2>
 
           {error && (
-            <div
-              style={{
-                color: "#b91c1c",
-                backgroundColor: "#fee2e2",
-                padding: "8px",
-                borderRadius: "6px",
-                marginBottom: "10px",
-                fontSize: "14px",
-                fontWeight: "500"
-              }}
-            >
+            <div style={{ 
+              color: "#b91c1c", 
+              backgroundColor: "#fee2e2", 
+              padding: "10px", 
+              borderRadius: "8px", 
+              marginBottom: "15px", 
+              fontSize: "14px",
+              fontWeight: "500",
+              textAlign: "center"
+            }}>
               {error}
             </div>
           )}
 
           <form onSubmit={handleRegister}>
-            <input
-              name="name"
-              placeholder="Full Name"
-              onChange={handleChange}
-              required
-            />
-
-            <input
-              name="email"
-              type="email"
-              placeholder="Email"
-              onChange={handleChange}
-              required
-            />
-
-            <input
-              name="password"
-              type="password"
-              placeholder="Password"
-              onChange={handleChange}
-              required
-            />
-
-            <input
-              name="phone"
-              placeholder="Phone"
-              maxLength="10"
-              onChange={handleChange}
-              required
-            />
-
-            <select name="gender" onChange={handleChange} required>
+            <input name="name" placeholder="Full Name" value={formData.name} onChange={handleChange} required />
+            <input name="email" type="email" placeholder="Email" value={formData.email} onChange={handleChange} required />
+            <input name="password" type="password" placeholder="Password" value={formData.password} onChange={handleChange} required />
+            <input name="phone" placeholder="Phone" maxLength="10" value={formData.phone} onChange={handleChange} required />
+            
+            <select name="gender" value={formData.gender} onChange={handleChange} required>
               <option value="">Select Gender</option>
               <option value="Male">Male</option>
               <option value="Female">Female</option>
               <option value="Other">Other</option>
             </select>
 
-            <textarea
-              name="address"
-              placeholder="Address"
-              onChange={handleChange}
-            ></textarea>
+            <textarea name="address" placeholder="Address" value={formData.address} onChange={handleChange} required></textarea>
 
-            <button type="submit">Register</button>
+            <button type="submit" disabled={loading}>
+              {loading ? "Registering..." : "Register"}
+            </button>
           </form>
 
           <p className="register-text">
