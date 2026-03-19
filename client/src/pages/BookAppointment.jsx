@@ -16,6 +16,10 @@ const BookAppointmentPage = () => {
   
   const [dbDoctors, setDbDoctors] = useState([]);
   const [loadingDoctors, setLoadingDoctors] = useState(false);
+  
+  // NEW STATE: For fetching slots from the database
+  const [availableSlots, setAvailableSlots] = useState([]);
+  const [loadingSlots, setLoadingSlots] = useState(false);
 
   const userName = localStorage.getItem("userName") || "Patient";
 
@@ -49,23 +53,18 @@ const BookAppointmentPage = () => {
     fileInputRef.current.click();
   };
 
-  // 1. EFFECT: Fetch doctors with Case-Insensitive logic
+  // 1. Fetch doctors based on selected department
   useEffect(() => {
     const fetchDoctors = async () => {
       if (!formData.department) {
         setDbDoctors([]);
         return;
       }
-      
       setLoadingDoctors(true);
       try {
-        // Changed endpoint to /api/doctors/all to match your Routes file
-        // Added the department as a query parameter
         const response = await axios.get(`http://localhost:5000/api/doctors/all`, {
           params: { department: formData.department }
         });
-        
-        console.log("Doctors found:", response.data);
         setDbDoctors(response.data);
       } catch (error) {
         console.error("Error fetching doctors:", error);
@@ -74,13 +73,41 @@ const BookAppointmentPage = () => {
         setLoadingDoctors(false);
       }
     };
-
     fetchDoctors();
-    setFormData(prev => ({ ...prev, doctorId: '' }));
+    setFormData(prev => ({ ...prev, doctorId: '', timeSlot: '' }));
     setSelectedDoctor(null);
+    setAvailableSlots([]);
   }, [formData.department]);
 
-  // 2. EFFECT: Set the selected doctor details for the sidebar summary
+  // 2. NEW EFFECT: Fetch time slots based on Selected Doctor and Date
+  useEffect(() => {
+    const fetchSlots = async () => {
+      if (!formData.doctorId || !formData.appointmentDate) {
+        setAvailableSlots([]);
+        return;
+      }
+      setLoadingSlots(true);
+      try {
+        const response = await axios.get(`http://localhost:5000/api/schedule/get`, {
+          params: { 
+            doctorId: formData.doctorId, 
+            date: formData.appointmentDate 
+          }
+        });
+        // The backend returns an array of active slots
+        setAvailableSlots(response.data);
+      } catch (error) {
+        console.error("Error fetching slots:", error);
+        setAvailableSlots([]);
+      } finally {
+        setLoadingSlots(false);
+      }
+    };
+    fetchSlots();
+    setFormData(prev => ({ ...prev, timeSlot: '' }));
+  }, [formData.doctorId, formData.appointmentDate]);
+
+  // 3. Set selected doctor details for sidebar
   useEffect(() => {
     if (formData.doctorId) {
       const doctor = dbDoctors.find(doc => doc._id === formData.doctorId);
@@ -141,7 +168,7 @@ const BookAppointmentPage = () => {
       <div className={`${isCollapsed ? "w-20" : "w-64"} bg-gradient-to-b from-blue-600 to-blue-800 text-white min-h-screen shadow-2xl transition-all duration-300 ease-in-out flex flex-col z-50`}>
         <div className="h-20 px-6 border-b border-blue-500 flex items-center justify-between shrink-0">
           {!isCollapsed && <h2 className="text-xl font-bold flex items-center space-x-3 whitespace-nowrap overflow-hidden"><span>MediConnect</span></h2>}
-          <button onClick={() => setIsCollapsed(!isCollapsed)} className="p-2 hover:bg-white/20 rounded-lg transition-colors focus:outline-none">
+          <button onClick={() => setIsCollapsed(!isCollapsed)} className="p-2 hover:bg-white/10 rounded-lg transition-colors focus:outline-none">
             {isCollapsed ? <FaBars size={20} /> : <FaChevronLeft size={20} />}
           </button>
         </div>
@@ -160,7 +187,6 @@ const BookAppointmentPage = () => {
       </div>
 
       <div className="flex-1 flex flex-col h-full overflow-hidden">
-        {/* Navbar */}
         <header className="h-20 bg-white shadow-sm border-b border-gray-100 px-8 flex justify-between items-center shrink-0 z-40">
           <h1 className="text-2xl font-bold text-blue-700">Book Appointment</h1>
           <div className="flex items-center space-x-6">
@@ -242,13 +268,22 @@ const BookAppointmentPage = () => {
                         </div>
                         <div className="space-y-2">
                           <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Time *</label>
-                          <select name="timeSlot" value={formData.timeSlot} onChange={handleInputChange} className="w-full px-4 py-3 border border-gray-200 rounded-xl font-medium focus:ring-2 focus:ring-blue-500 outline-none transition-all" required>
-                            <option value="">Time</option>
-                            <option>09:00 AM</option>
-                            <option>10:00 AM</option>
-                            <option>11:00 AM</option>
-                            <option>02:00 PM</option>
-                            <option>03:00 PM</option>
+                          <select 
+                            name="timeSlot" 
+                            value={formData.timeSlot} 
+                            onChange={handleInputChange} 
+                            className="w-full px-4 py-3 border border-gray-200 rounded-xl font-medium focus:ring-2 focus:ring-blue-500 outline-none transition-all" 
+                            required 
+                            disabled={!formData.appointmentDate || loadingSlots}
+                          >
+                            <option value="">{loadingSlots ? "Loading..." : "Time"}</option>
+                            {availableSlots.length > 0 ? (
+                                availableSlots.map((slot, index) => (
+                                    <option key={index} value={slot.time}>{slot.time}</option>
+                                ))
+                            ) : (
+                                formData.appointmentDate && !loadingSlots && <option disabled>No Slots Available</option>
+                            )}
                           </select>
                         </div>
                       </div>
@@ -277,7 +312,7 @@ const BookAppointmentPage = () => {
 
                     <div className="flex space-x-4 pt-4">
                       <button type="submit" className="flex-1 bg-blue-600 text-white font-black py-4 rounded-2xl shadow-xl hover:bg-blue-700 active:scale-[0.98] transition-all">Confirm Booking</button>
-                      <button type="reset" onClick={() => {setFormData({...formData, symptoms: '', department: '', doctorId: '', age: '', bloodGroup: '', appointmentDate: '', timeSlot: '', medicalReports: null}); setSelectedDoctor(null);}} className="px-8 py-4 border-2 border-gray-100 text-gray-400 font-bold rounded-2xl hover:bg-white hover:text-gray-600 transition-all">Reset</button>
+                      <button type="reset" onClick={() => {setFormData({...formData, symptoms: '', department: '', doctorId: '', age: '', bloodGroup: '', appointmentDate: '', timeSlot: '', medicalReports: null}); setSelectedDoctor(null); setAvailableSlots([]);}} className="px-8 py-4 border-2 border-gray-100 text-gray-400 font-bold rounded-2xl hover:bg-white hover:text-gray-600 transition-all">Reset</button>
                     </div>
                   </form>
                 </div>

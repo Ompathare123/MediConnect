@@ -1,4 +1,5 @@
 const User = require("../models/User");
+const Doctor = require("../models/Doctor"); // Imported Doctor Model
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
@@ -8,16 +9,13 @@ exports.registerUser = async (req, res) => {
     const { name, email, password, phone, gender, address } = req.body;
     const normalizedEmail = email.toLowerCase();
 
-    // 1. Check if user already exists
     const existingUser = await User.findOne({ email: normalizedEmail });
     if (existingUser) {
       return res.status(400).json({ message: "User already exists with this email" });
     }
 
-    // 2. Hash the password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // 3. Create new user with "patient" role
     const user = new User({
       name,
       email: normalizedEmail,
@@ -25,7 +23,7 @@ exports.registerUser = async (req, res) => {
       phone,
       gender,
       address,
-      role: "patient" // Explicitly setting the patient role
+      role: "patient"
     });
 
     await user.save();
@@ -58,11 +56,20 @@ exports.loginUser = async (req, res) => {
       { expiresIn: "1d" }
     );
 
+    // FIND DOCTOR PROFILE ID
+    let doctorProfileId = null;
+    if (user.role === "doctor") {
+      const doctorProfile = await Doctor.findOne({ userId: user._id });
+      doctorProfileId = doctorProfile ? doctorProfile._id : null;
+    }
+
     res.json({
       success: true,
       token,
       role: user.role,
+      doctorProfileId, // Sent to frontend to fix the "No Slots" error
       user: {
+        id: user._id,
         name: user.name,
         email: user.email
       }

@@ -25,6 +25,13 @@ exports.saveSchedule = async (req, res) => {
     try {
         const { doctorId, date, slots } = req.body;
 
+        // VALIDATION FIX: Ensure doctorId is provided and valid
+        if (!doctorId || doctorId === "null" || doctorId === "undefined") {
+            return res.status(400).json({ 
+                message: "Doctor ID is missing. Please log in again to refresh your session." 
+            });
+        }
+
         // Upsert logic: Update if exists for that date, otherwise create new
         const schedule = await Schedule.findOneAndUpdate(
             { doctorId, date },
@@ -34,6 +41,7 @@ exports.saveSchedule = async (req, res) => {
 
         res.status(200).json({ message: "Schedule saved successfully", schedule });
     } catch (error) {
+        console.error("Save Schedule Error:", error);
         res.status(500).json({ message: "Error saving schedule", error: error.message });
     }
 };

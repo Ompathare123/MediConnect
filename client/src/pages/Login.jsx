@@ -14,16 +14,11 @@ function Login() {
     setError("");
 
     try {
-      const response = await fetch(
-        "http://localhost:5000/api/auth/login",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({ email, password })
-        }
-      );
+      const response = await fetch("http://localhost:5000/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password })
+      });
 
       const data = await response.json();
 
@@ -32,12 +27,16 @@ function Login() {
         return;
       }
 
-      // Store Auth data
       localStorage.setItem("token", data.token);
       localStorage.setItem("role", data.role);
       localStorage.setItem("userName", data.user?.name || "User");
+      localStorage.setItem("userId", data.user?.id);
 
-      // Redirect based on role
+      // SAVE DOCTOR PROFILE ID
+      if (data.role === "doctor" && data.doctorProfileId) {
+        localStorage.setItem("doctorProfileId", data.doctorProfileId);
+      }
+
       if (data.role === "doctor") {
         navigate("/doctor-dashboard");
       } else if (data.role === "admin") {
@@ -47,7 +46,7 @@ function Login() {
       }
 
     } catch (error) {
-      setError("Server error. Check if the backend is running on port 5000.");
+      setError("Server error. Check if the backend is running.");
     }
   };
 
@@ -56,44 +55,13 @@ function Login() {
       <div className="overlay">
         <div className="login-card">
           <h2>Sign In</h2>
-
-          {error && (
-            <div style={{
-                color: "#b91c1c",
-                backgroundColor: "#fee2e2",
-                padding: "8px",
-                borderRadius: "6px",
-                marginBottom: "10px",
-                fontSize: "14px",
-                fontWeight: "500"
-              }}>
-              {error}
-            </div>
-          )}
-
+          {error && <div className="error-alert" style={{color: "#b91c1c", backgroundColor: "#fee2e2", padding: "8px", borderRadius: "6px", marginBottom: "10px", fontSize: "14px"}}>{error}</div>}
           <form onSubmit={handleLogin}>
-            <input
-              type="email"
-              placeholder="Enter Email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-
-            <input
-              type="password"
-              placeholder="Enter Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-
+            <input type="email" placeholder="Enter Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+            <input type="password" placeholder="Enter Password" value={password} onChange={(e) => setPassword(e.target.value)} required />
             <button type="submit">Login</button>
           </form>
-
-          <p className="register-text">
-            New user? <Link to="/register">Register</Link>
-          </p>
+          <p className="register-text">New user? <Link to="/register">Register</Link></p>
         </div>
       </div>
     </div>
