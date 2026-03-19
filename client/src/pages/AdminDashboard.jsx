@@ -4,7 +4,7 @@ import {
   FaBars, FaTachometerAlt, FaCalendarCheck, FaUsers, FaUserMd,
   FaMoneyBillWave, FaFlask, FaFileAlt, FaThLarge, FaStethoscope,
   FaCog, FaSignOutAlt, FaBell, FaHospitalUser, FaChevronLeft,
-  FaPlusCircle, FaUserPlus, FaFileInvoice, FaChartLine, FaArrowLeft, FaUserInjured, FaCalendarPlus
+  FaPlusCircle, FaUserPlus, FaFileInvoice, FaChartLine, FaArrowLeft
 } from "react-icons/fa";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -24,7 +24,7 @@ const demographicData = [
 
 const COLORS = ["#1e3a8a", "#2563eb", "#93c5fd"];
 
-// --- SUB-COMPONENTS (DEFINED OUTSIDE TO FIX FOCUS LOSS WHILE TYPING) ---
+// --- SUB-COMPONENTS ---
 
 const DashboardHome = ({ quickActions }) => (
   <div className="animate-fadeIn space-y-8 text-left">
@@ -80,9 +80,9 @@ const AddDoctorForm = ({ setView, doctorData, handleDoctorChange, handleSaveDoct
 
     <div className="bg-white rounded-[2rem] shadow-sm border border-gray-50 overflow-hidden">
       <div className="bg-blue-600 px-8 py-4 text-white font-bold flex items-center gap-2 uppercase tracking-widest text-sm">
-        <FaUserMd /> Login Details
+        <FaHospitalUser /> Login Details
       </div>
-      <div className="p-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="p-8 grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="space-y-1">
           <label className="text-xs font-bold text-slate-500 uppercase tracking-tighter">First Name</label>
           <input type="text" name="firstName" value={doctorData.firstName} onChange={handleDoctorChange} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 outline-none" placeholder="First Name" />
@@ -107,7 +107,7 @@ const AddDoctorForm = ({ setView, doctorData, handleDoctorChange, handleSaveDoct
           <label className="text-xs font-bold text-slate-500 uppercase tracking-tighter">Email Address</label>
           <input type="email" name="email" value={doctorData.email} onChange={handleDoctorChange} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500" placeholder="email@mail.com" />
         </div>
-        <div className="space-y-1 lg:col-span-1">
+        <div className="space-y-1">
           <label className="text-xs font-bold text-slate-500 uppercase tracking-tighter">Phone Number</label>
           <input type="text" name="phone" value={doctorData.phone} onChange={handleDoctorChange} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 outline-none" placeholder="+1 234 567 890" />
         </div>
@@ -121,8 +121,11 @@ const AddDoctorForm = ({ setView, doctorData, handleDoctorChange, handleSaveDoct
           <label className="text-xs font-bold text-slate-500 uppercase tracking-tighter">Department *</label>
           <select name="department" value={doctorData.department} onChange={handleDoctorChange} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500">
             <option value="">Select Department</option>
+            <option value="General Checkup">General Checkup</option>
             <option value="Cardiology">Cardiology</option>
             <option value="Neurology">Neurology</option>
+            <option value="Pediatrics">Pediatrics</option>
+            <option value="Orthopedics">Orthopedics</option>
           </select>
         </div>
         <div className="space-y-1">
@@ -146,34 +149,25 @@ const AddDoctorForm = ({ setView, doctorData, handleDoctorChange, handleSaveDoct
   </div>
 );
 
-// --- MAIN ADMIN DASHBOARD ---
-
 const AdminDashboard = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [activeMenu, setActiveMenu] = useState("Dashboard");
   const [view, setView] = useState("dashboard");
 
   const [doctorData, setDoctorData] = useState({
-    firstName: "",
-    middleName: "",
-    lastName: "",
-    username: "admin",
-    password: "password",
-    email: "",
-    phone: "",
-    department: "",
-    specialization: "",
-    experience: "",
-    education: ""
+    firstName: "", middleName: "", lastName: "",
+    username: "admin", password: "password",
+    email: "", phone: "", department: "",
+    specialization: "", experience: "", education: ""
   });
 
   const handleDoctorChange = (e) => {
     setDoctorData({ ...doctorData, [e.target.name]: e.target.value });
   };
-const handleSaveDoctor = async () => {
-    // Validation
-    if (!doctorData.firstName || !doctorData.lastName || !doctorData.email || !doctorData.password) {
-      alert("Please fill in the required fields: Name, Email, and Password.");
+
+  const handleSaveDoctor = async () => {
+    if (!doctorData.firstName || !doctorData.lastName || !doctorData.email || !doctorData.password || !doctorData.department) {
+      alert("Please fill in all required fields.");
       return;
     }
 
@@ -182,20 +176,20 @@ const handleSaveDoctor = async () => {
         firstName: doctorData.firstName,
         lastName: doctorData.lastName,
         email: doctorData.email,
-        password: doctorData.password, // Correctly sending the UI password
+        password: doctorData.password, 
         phone: doctorData.phone || "", 
         department: doctorData.department,
         specialization: doctorData.specialization,
         experience: Number(doctorData.experience) || 0,
-        education: doctorData.education
+        education: doctorData.education,
+        fees: 500 // Logic requirement
       };
 
       const response = await axios.post("http://localhost:5000/api/doctors/add", payload);
       
       if (response.data.success) {
-        alert("Doctor saved successfully! They can now log in with these credentials.");
+        alert("Doctor saved successfully!");
         setView("dashboard");
-        // Reset form
         setDoctorData({
           firstName: "", middleName: "", lastName: "",
           username: "admin", password: "password",
@@ -208,6 +202,7 @@ const handleSaveDoctor = async () => {
       alert(`Backend Error: ${msg}`);
     }
   };
+
   const menuItems = [
     { type: "label", label: "MAIN" },
     { icon: FaTachometerAlt, label: "Dashboard", viewTarget: "dashboard" },
@@ -231,7 +226,6 @@ const handleSaveDoctor = async () => {
     { icon: FaUserPlus, label: "Add Patient", color: "bg-blue-400", action: () => setView("addPatient") },
     { icon: FaFlask, label: "Laboratory", color: "bg-indigo-500" },
     { icon: FaCalendarCheck, label: "View Appointments", color: "bg-blue-700" },
-    { icon: FaUsers, label: "Patient List", color: "bg-blue-400", action: () => setView("addPatient") },
     { icon: FaFileInvoice, label: "Invoices", color: "bg-sky-500" },
     { icon: FaChartLine, label: "Reports", color: "bg-blue-800" },
   ];

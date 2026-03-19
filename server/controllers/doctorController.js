@@ -49,12 +49,22 @@ exports.addDoctor = async (req, res) => {
   }
 };
 
-// Ensure this EXACT name is used in your routes file
 exports.getDoctors = async (req, res) => {
   try {
-    const doctors = await Doctor.find().sort({ createdAt: -1 });
+    const { department } = req.query;
+    
+    let filter = {};
+    if (department) {
+      // 'i' makes it case-insensitive
+      filter.department = { $regex: new RegExp(`^${department.trim()}$`, 'i') };
+    }
+
+    const doctors = await Doctor.find(filter).sort({ createdAt: -1 });
+    
+    console.log(`🔍 Search for: "${department}" | Found: ${doctors.length}`);
     res.json(doctors);
   } catch (err) {
+    console.error("Fetch Doctors Error:", err);
     res.status(500).json({ message: "Error fetching doctors" });
   }
 };
