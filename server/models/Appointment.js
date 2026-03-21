@@ -35,10 +35,21 @@ const appointmentSchema = new mongoose.Schema(
     age: { type: String },
     bloodGroup: { type: String },
     symptoms: { type: String },
-    // --- NEW FIELD FOR UPLOADED REPORT ---
     medicalReport: { 
       type: String,
       default: null 
+    },
+    // --- NEW: PRESCRIPTION STORAGE ---
+    prescription: {
+      medicines: [
+        {
+          name: String,
+          dosage: String,
+          timing: String
+        }
+      ],
+      advice: String,
+      createdAt: { type: Date, default: Date.now }
     },
     status: {
       type: String,

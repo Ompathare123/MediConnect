@@ -8,48 +8,32 @@ const {
   createAppointment,
   getMyAppointments,
   deleteAppointment,
-  updateAppointmentStatus
+  updateAppointmentStatus,
+  addPrescription // Imported
 } = require("../controllers/appointmentController");
 
 const { protect } = require("../middleware/authMiddleware");
 
-// --- MULTER CONFIGURATION ---
-// This ensures the path is absolute to your 'server/uploads' folder
+// MULTER CONFIG
 const uploadDir = path.join(__dirname, "../uploads");
-
-// Automatically create 'uploads' folder if it doesn't exist
 if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir, { recursive: true });
 }
 
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    // Generates a unique name: timestamp-originalName
-    cb(null, Date.now() + "-" + file.originalname);
-  },
+  destination: (req, file, cb) => { cb(null, uploadDir); },
+  filename: (req, file, cb) => { cb(null, Date.now() + "-" + file.originalname); },
 });
 
-const upload = multer({ 
-    storage: storage,
-    limits: { fileSize: 10 * 1024 * 1024 } // 10MB Limit
-});
+const upload = multer({ storage: storage, limits: { fileSize: 10 * 1024 * 1024 } });
 
-// --- ROUTES ---
-
-// POST /api/appointments
-// IMPORTANT: 'medicalReport' must match the key used in your frontend FormData.append()
+// ROUTES
 router.post("/", protect, upload.single("medicalReport"), createAppointment);
-
-// GET /api/appointments
 router.get("/", protect, getMyAppointments);
-
-// DELETE /api/appointments/:id
 router.delete("/:id", protect, deleteAppointment);
-
-// PUT /api/appointments/:id
 router.put("/:id", protect, updateAppointmentStatus);
+
+// --- NEW ROUTE FOR PRESCRIPTION BUILDER ---
+router.put("/:id/prescription", protect, addPrescription);
 
 module.exports = router;
