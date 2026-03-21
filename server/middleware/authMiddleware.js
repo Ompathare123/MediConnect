@@ -3,16 +3,22 @@ const jwt = require("jsonwebtoken");
 exports.protect = (req, res, next) => {
   const authHeader = req.headers.authorization;
 
-  if (!authHeader)
-    return res.status(401).json({ message: "No token" });
+  if (!authHeader || !authHeader.startsWith("Bearer")) {
+    return res.status(401).json({ message: "No token, authorization denied" });
+  }
 
   const token = authHeader.split(" ")[1];
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || "secret123");
+    
+    // Ensure the ID is attached correctly for the controller
     req.user = decoded;
+    if (!req.user.id && decoded.id) req.user.id = decoded.id;
+    
     next();
   } catch (err) {
-    res.status(401).json({ message: "Invalid token" });
+    console.error("Middleware Token Error:", err.message);
+    res.status(401).json({ message: "Token is not valid" });
   }
 };

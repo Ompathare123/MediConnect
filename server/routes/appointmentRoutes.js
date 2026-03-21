@@ -7,7 +7,10 @@ const {
 
 const { protect } = require("../middleware/authMiddleware");
 
+// POST /api/appointments
 router.post("/", protect, createAppointment);
+
+// GET /api/appointments
 router.get("/", protect, getMyAppointments);
 
 module.exports = router;

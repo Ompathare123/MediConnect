@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import axios from "axios";
 import { 
   FaTachometerAlt, FaCalendarCheck, FaUsers, FaClock, 
   FaSignOutAlt, FaHospitalUser, FaChevronLeft, FaBars,
@@ -10,7 +11,7 @@ import {
   ResponsiveContainer 
 } from "recharts";
 
-// --- DUMMY DATA ---
+// --- DUMMY CHART DATA ---
 const chartData = [
   { name: "Mon", appointments: 15 }, { name: "Tue", appointments: 25 },
   { name: "Wed", appointments: 20 }, { name: "Thu", appointments: 35 },
@@ -24,12 +25,50 @@ const DoctorDashboard = () => {
   
   const rawName = localStorage.getItem("userName") || "Smith";
   const doctorName = rawName.startsWith("Dr.") ? rawName : `Dr. ${rawName}`;
+  
+  // CRITICAL: Get the Profile ID to match the database doctorId
+  const doctorProfileId = localStorage.getItem("doctorProfileId");
+
+  // --- REAL DATA STATES ---
+  const [appointments, setAppointments] = useState([]);
+  const [stats, setStats] = useState({ pending: 0, completed: 0, today: 0 });
 
   const [slots, setSlots] = useState([]);
   const [formInput, setFormInput] = useState({
     startTime: "09:00", endTime: "10:00",
     maxPatients: "5", fee: "100", mode: "In-Person"
   });
+
+  // --- FETCH DATA ON MOUNT ---
+  useEffect(() => {
+    fetchDoctorAppointments();
+    // eslint-disable-next-line
+  }, []);
+
+  const fetchDoctorAppointments = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await axios.get("http://localhost:5000/api/appointments", {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      const allApts = res.data;
+      const todayStr = new Date().toISOString().split('T')[0];
+
+      // --- FILTERING LOGIC: Match by doctorProfileId ---
+      const myApts = allApts.filter(a => a.doctorId === doctorProfileId);
+
+      // Calculate Stats based only on filtered results
+      const pending = myApts.filter(a => a.status === "Pending").length;
+      const completed = myApts.filter(a => a.status === "Completed").length;
+      const todayCount = myApts.filter(a => a.appointmentDate === todayStr).length;
+
+      setAppointments(myApts);
+      setStats({ pending, completed, today: todayCount });
+    } catch (error) {
+      console.error("Error fetching doctor data:", error);
+    }
+  };
 
   // --- HANDLERS ---
   const handleInputChange = (e) => {
@@ -38,19 +77,14 @@ const DoctorDashboard = () => {
 
   const saveScheduleToDB = async () => {
     if (slots.length === 0) return alert("Please add at least one slot.");
-    
-    const docId = localStorage.getItem("doctorProfileId") || localStorage.getItem("userId");
-
-    if (!docId || docId === "null" || docId === "undefined") {
-        return alert("❌ Error: Doctor ID not found. Please log out and log in again.");
-    }
+    if (!doctorProfileId) return alert("❌ Error: Doctor Profile ID not found.");
 
     try {
       const response = await fetch("http://localhost:5000/api/schedule/save", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          doctorId: docId, 
+          doctorId: doctorProfileId, 
           date: selectedDate,
           slots: slots.map(s => ({
             time: s.time, mode: s.mode,
@@ -59,11 +93,8 @@ const DoctorDashboard = () => {
         }),
       });
 
-      if (response.ok) {
-        alert("✅ Schedule saved successfully!");
-      } else {
-        alert("❌ Failed to save schedule.");
-      }
+      if (response.ok) alert("✅ Schedule saved successfully!");
+      else alert("❌ Failed to save schedule.");
     } catch (err) {
       alert("Server error.");
     }
@@ -93,8 +124,12 @@ const DoctorDashboard = () => {
         <h2 className="text-2xl font-black text-slate-800">General Overview</h2>
         <p className="text-slate-400 text-sm">Welcome back, {doctorName}!</p>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {[{ label: "PENDING APPOINTMENTS", value: "12" }, { label: "COMPLETED VISITS", value: "45" }, { label: "TODAY'S APPOINTMENTS", value: "5" }].map((stat, i) => (
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
+        {[
+          { label: "PENDING APPOINTMENTS", value: stats.pending }, 
+          { label: "COMPLETED VISITS", value: stats.completed }, 
+          { label: "TODAY'S APPOINTMENTS", value: stats.today }
+        ].map((stat, i) => (
           <div key={i} className="bg-white p-8 rounded-[2rem] shadow-sm border border-gray-50 flex flex-col justify-center">
             <p className="text-gray-400 text-[10px] font-black uppercase tracking-widest">{stat.label}</p>
             <h3 className="text-4xl font-black mt-2 text-slate-800">{stat.value}</h3>
@@ -106,17 +141,52 @@ const DoctorDashboard = () => {
           <h3 className="text-lg font-black text-slate-800 mb-6 text-left">Today's Schedule</h3>
           <table className="w-full text-left font-bold text-sm text-slate-700">
             <thead>
-              <tr className="text-gray-400 text-[10px] uppercase tracking-widest border-b border-gray-50"><th className="pb-4">Time</th><th className="pb-4">Patient</th><th className="pb-4">Status</th></tr>
+              <tr className="text-gray-400 text-[10px] uppercase tracking-widest border-b border-gray-50">
+                <th className="pb-4">Time</th>
+                <th className="pb-4">Patient Details</th>
+                <th className="pb-4">Status</th>
+              </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
-              <tr><td className="py-4">09:00 AM</td><td className="py-4 text-blue-600">John Doe</td><td className="py-4"><span className="bg-yellow-50 text-yellow-600 px-3 py-1 rounded-full text-[10px]">PENDING</span></td></tr>
-              <tr><td className="py-4">10:30 AM</td><td className="py-4 text-blue-600">Jane Smith</td><td className="py-4"><span className="bg-green-50 text-green-600 px-3 py-1 rounded-full text-[10px]">COMPLETED</span></td></tr>
+              {appointments
+                .filter(a => a.appointmentDate === new Date().toISOString().split('T')[0])
+                .length === 0 ? (
+                  <tr><td colSpan="3" className="py-10 text-center text-slate-400 italic font-bold">No appointments for today.</td></tr>
+                ) : (
+                  appointments
+                    .filter(a => a.appointmentDate === new Date().toISOString().split('T')[0])
+                    .map((apt) => (
+                      <tr key={apt._id}>
+                        <td className="py-4">{apt.timeSlot}</td>
+                        <td className="py-4">
+                            <p className="text-blue-600 font-black">{apt.patientName || "Anonymous Patient"}</p>
+                            <p className="text-[11px] text-gray-400 font-bold uppercase tracking-tighter">Age: {apt.age} • Blood: {apt.bloodGroup}</p>
+                        </td>
+                        <td className="py-4">
+                          <span className={`px-3 py-1 rounded-full text-[10px] font-black ${apt.status === "Pending" ? "bg-yellow-50 text-yellow-600" : "bg-green-50 text-green-600"}`}>
+                            {apt.status.toUpperCase()}
+                          </span>
+                        </td>
+                      </tr>
+                    ))
+                )
+              }
             </tbody>
           </table>
         </div>
         <div className="bg-white p-8 rounded-[2rem] shadow-sm border border-gray-50">
           <h3 className="text-lg font-black text-slate-800 mb-6 text-left">Appointments Per Month</h3>
-          <div className="h-[250px]"><ResponsiveContainer width="100%" height="100%"><BarChart data={chartData}><CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" /><XAxis dataKey="name" axisLine={false} tickLine={false} /><YAxis axisLine={false} tickLine={false} /><Tooltip cursor={{ fill: '#f8fafc' }} /><Bar dataKey="appointments" fill="#2563eb" radius={[6, 6, 0, 0]} barSize={35} /></BarChart></ResponsiveContainer></div>
+          <div className="h-[250px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} />
+                <YAxis axisLine={false} tickLine={false} />
+                <Tooltip cursor={{ fill: '#f8fafc' }} />
+                <Bar dataKey="appointments" fill="#2563eb" radius={[6, 6, 0, 0]} barSize={35} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
         </div>
       </div>
     </div>
@@ -132,7 +202,6 @@ const DoctorDashboard = () => {
         <div className="lg:col-span-1 bg-white p-6 rounded-[2rem] shadow-sm border border-gray-50">
           <h3 className="text-sm font-black text-slate-800 mb-4 uppercase flex items-center gap-2"><FaCalendarAlt className="text-blue-600" /> Select Date</h3>
           <div className="grid grid-cols-1 gap-3">
-            <button onClick={() => setSelectedDate("2026-03-24")} className={`p-4 rounded-2xl text-xs font-black uppercase transition-all border ${selectedDate === "2026-03-24" ? "bg-blue-600 text-white" : "bg-gray-50"}`}>March 24</button>
             <input type="date" className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl text-sm font-bold" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} />
           </div>
         </div>
@@ -180,14 +249,16 @@ const DoctorDashboard = () => {
           ))}
         </nav>
         <div className="px-3 pb-8">
-          <button onClick={handleLogout} className={`w-full flex items-center ${isCollapsed ? "justify-center" : "space-x-4"} px-4 py-3 rounded-2xl hover:bg-red-500/20 text-red-100 transition-all`}>
+          <button onClick={handleLogout} className={`w-full flex items-center ${isCollapsed ? "justify-center" : "space-x-4"} px-4 py-3 rounded-xl hover:bg-red-500/20 text-red-100 transition-all`}>
             <FaSignOutAlt size={18} />{!isCollapsed && <span className="text-sm font-bold">Logout</span>}
           </button>
         </div>
       </div>
       <div className="flex-1 flex flex-col transition-all duration-300 overflow-hidden h-screen">
         <header className="h-20 bg-white shadow-sm border-b border-gray-100 px-10 flex justify-between items-center shrink-0">
-          <h2 className="text-xl font-black text-slate-800 uppercase tracking-tighter">{view === "dashboard" ? "Dashboard" : view === "schedule" ? "Schedule" : view.toUpperCase()}</h2>
+          <h2 className="text-xl font-black text-slate-800 uppercase tracking-tighter">
+            {view === "dashboard" ? "Doctor Dashboard" : view === "schedule" ? "Schedule" : view.toUpperCase()}
+          </h2>
           <div className="flex items-center space-x-6">
             <div className="relative p-2 rounded-full hover:bg-gray-50 transition cursor-pointer"><FaBell className="text-gray-400 text-xl" /><span className="absolute top-1 right-1 bg-red-500 text-white text-[10px] w-4 h-4 flex items-center justify-center rounded-full border-2 border-white">3</span></div>
             <div className="flex items-center space-x-3 border-l pl-6 border-gray-100 text-right">
@@ -197,7 +268,7 @@ const DoctorDashboard = () => {
           </div>
         </header>
         <main className="p-10 overflow-y-auto bg-[#F8FAFC] flex-1 custom-scrollbar">
-          {view === "dashboard" ? <DashboardHome /> : view === "schedule" ? <ScheduleManager /> : <div className="text-center p-20 text-slate-400 font-bold">Content for {view} is coming soon.</div>}
+          {view === "dashboard" ? <DashboardHome /> : view === "schedule" ? <ScheduleManager /> : <div className="text-center p-20 text-slate-400 font-bold">Content for {view.toUpperCase()} is coming soon.</div>}
         </main>
       </div>
       <style dangerouslySetInnerHTML={{ __html: `.animate-fadeIn { animation: fadeIn 0.4s ease-out forwards; } @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } } .custom-scrollbar::-webkit-scrollbar { width: 4px; } .custom-scrollbar::-webkit-scrollbar-track { background: transparent; } .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }` }} />

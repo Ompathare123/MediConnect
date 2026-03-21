@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import {
   FaBars, FaTachometerAlt, FaCalendarPlus, FaCalendarCheck, FaFileMedical,
-  FaFilePrescription, FaCreditCard, FaUser, FaSignOutAlt, FaBell,
+  FaFilePrescription, FaUser, FaSignOutAlt, FaBell,
   FaHospitalUser, FaChevronLeft, FaPaperclip, FaInfoCircle
 } from "react-icons/fa";
 
@@ -17,7 +17,6 @@ const BookAppointmentPage = () => {
   const [dbDoctors, setDbDoctors] = useState([]);
   const [loadingDoctors, setLoadingDoctors] = useState(false);
   
-  // NEW STATE: For fetching slots from the database
   const [availableSlots, setAvailableSlots] = useState([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
 
@@ -44,16 +43,13 @@ const BookAppointmentPage = () => {
     { icon: FaCalendarCheck, label: "My Appointments", path: "/appointments" },
     { icon: FaFileMedical, label: "Medical Records", path: "/records" },
     { icon: FaFilePrescription, label: "Prescriptions", path: "/prescriptions" },
-    { icon: FaCreditCard, label: "Billing / Payments", path: "/billing" },
-    { icon: FaUser, label: "Profile", path: "/profile" },
-    { icon: FaSignOutAlt, label: "Logout", path: "/" }
+    { icon: FaUser, label: "Profile", path: "/profile" }
   ];
 
   const handleUploadClick = () => {
     fileInputRef.current.click();
   };
 
-  // 1. Fetch doctors based on selected department
   useEffect(() => {
     const fetchDoctors = async () => {
       if (!formData.department) {
@@ -79,10 +75,9 @@ const BookAppointmentPage = () => {
     setAvailableSlots([]);
   }, [formData.department]);
 
-  // 2. NEW EFFECT: Fetch time slots based on Selected Doctor and Date
   useEffect(() => {
     const fetchSlots = async () => {
-      if (!formData.doctorId || !formData.appointmentDate) {
+      if (!formData.doctorId || !formData.appointmentDate || formData.doctorId === "null") {
         setAvailableSlots([]);
         return;
       }
@@ -94,7 +89,6 @@ const BookAppointmentPage = () => {
             date: formData.appointmentDate 
           }
         });
-        // The backend returns an array of active slots
         setAvailableSlots(response.data);
       } catch (error) {
         console.error("Error fetching slots:", error);
@@ -107,9 +101,8 @@ const BookAppointmentPage = () => {
     setFormData(prev => ({ ...prev, timeSlot: '' }));
   }, [formData.doctorId, formData.appointmentDate]);
 
-  // 3. Set selected doctor details for sidebar
   useEffect(() => {
-    if (formData.doctorId) {
+    if (formData.doctorId && formData.doctorId !== "null") {
       const doctor = dbDoctors.find(doc => doc._id === formData.doctorId);
       setSelectedDoctor(doctor || null);
     } else { 
@@ -128,32 +121,33 @@ const BookAppointmentPage = () => {
 
   const handleBookAppointment = async (e) => {
     e.preventDefault();
+    if (!formData.doctorId || formData.doctorId === "null") {
+        return alert("Please select a valid doctor.");
+    }
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch("http://localhost:5000/api/appointments", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ 
-          doctorId: formData.doctorId, 
-          doctorName: selectedDoctor?.name, 
-          department: formData.department, 
-          appointmentDate: formData.appointmentDate, 
-          timeSlot: formData.timeSlot,
-          age: formData.age,
-          bloodGroup: formData.bloodGroup,
-          symptoms: formData.symptoms
-        })
+      const payload = { 
+        patientName: formData.patientName, // Match Schema Key
+        doctorId: formData.doctorId, 
+        doctorName: selectedDoctor?.name, 
+        department: formData.department, 
+        appointmentDate: formData.appointmentDate, 
+        timeSlot: formData.timeSlot,
+        age: formData.age,
+        bloodGroup: formData.bloodGroup,
+        symptoms: formData.symptoms
+      };
+      const res = await axios.post("http://localhost:5000/api/appointments", payload, {
+        headers: { Authorization: `Bearer ${token}` }
       });
-
-      if (res.ok) { 
+      if (res.status === 201 || res.data.success) { 
         setSuccessMessage(true); 
         setTimeout(() => navigate("/patient-dashboard"), 2000); 
-      } else { 
-        const d = await res.json(); 
-        alert(d.message); 
       }
     } catch (error) { 
-      alert("Server error"); 
+      console.error("Full Booking Error:", error.response?.data);
+      const errorMsg = error.response?.data?.message || "Server error while booking. Please try again.";
+      alert(errorMsg); 
     }
   };
 
@@ -166,7 +160,7 @@ const BookAppointmentPage = () => {
     <div className="flex h-screen bg-[#F8FAFC] overflow-hidden text-left">
       {/* Sidebar */}
       <div className={`${isCollapsed ? "w-20" : "w-64"} bg-gradient-to-b from-blue-600 to-blue-800 text-white min-h-screen shadow-2xl transition-all duration-300 ease-in-out flex flex-col z-50`}>
-        <div className="h-20 px-6 border-b border-blue-500 flex items-center justify-between shrink-0">
+        <div className="h-20 px-6 border-b border-blue-50 flex items-center justify-between shrink-0">
           {!isCollapsed && <h2 className="text-xl font-bold flex items-center space-x-3 whitespace-nowrap overflow-hidden"><span>MediConnect</span></h2>}
           <button onClick={() => setIsCollapsed(!isCollapsed)} className="p-2 hover:bg-white/10 rounded-lg transition-colors focus:outline-none">
             {isCollapsed ? <FaBars size={20} /> : <FaChevronLeft size={20} />}
@@ -175,15 +169,25 @@ const BookAppointmentPage = () => {
         <nav className="mt-6 px-3 space-y-2 flex-1">
           {menuItems.map((item, index) => (
             <button key={index} 
-              onClick={() => item.label === "Logout" ? handleLogout() : navigate(item.path)}
+              onClick={() => navigate(item.path)}
               className={`w-full flex items-center ${isCollapsed ? "justify-center" : "space-x-3"} px-4 py-3 rounded-xl transition-all duration-200 ${item.active ? "bg-white/20 shadow-inner" : "hover:bg-white/10"}`}
               title={isCollapsed ? item.label : ""}
             >
-              <item.icon size={20} />
+              <div className="flex-shrink-0"><item.icon size={20} /></div>
               {!isCollapsed && <span className="whitespace-nowrap font-medium">{item.label}</span>}
             </button>
           ))}
         </nav>
+        <div className="px-3 pb-6 border-t border-blue-500/50 pt-4">
+          <button 
+            onClick={handleLogout}
+            className={`w-full flex items-center ${isCollapsed ? "justify-center" : "space-x-3"} px-4 py-3 rounded-xl hover:bg-red-500/20 transition-all duration-200 text-red-100`}
+            title={isCollapsed ? "Logout" : ""}
+          >
+            <div className="flex-shrink-0"><FaSignOutAlt size={20} /></div>
+            {!isCollapsed && <span className="whitespace-nowrap font-medium">Logout</span>}
+          </button>
+        </div>
       </div>
 
       <div className="flex-1 flex flex-col h-full overflow-hidden">

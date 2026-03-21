@@ -6,6 +6,9 @@ import PatientDashboard from "./pages/PatientDashboard";
 import BookAppointment from "./pages/BookAppointment";
 import Doctor from "./pages/Doctor";
 import AdminDashboard from './pages/AdminDashboard';
+import MyAppointments from "./pages/MyAppointments";
+import DoctorsList from "./pages/DoctorsList"; // ADDED THIS
+
 function App() {
   return (
     <Router>
@@ -14,26 +17,23 @@ function App() {
         <Route path="/" element={<Login />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+
+        {/* Doctor Routes */}
         <Route path="/doctor-dashboard" element={<Doctor />} />
+
+        {/* Admin Routes */}
         <Route path="/admin" element={<AdminDashboard />} />
 
-        {/* Standardized Dashboard Route 
-          Matches the navigate("/patient-dashboard") logic 
-        */}
+        {/* Patient Routes */}
         <Route path="/patient-dashboard" element={<PatientDashboard />} />
-        
-        {/* Book Appointment Route 
-          Matches the navigate("/book-appointment") logic 
-        */}
         <Route path="/book-appointment" element={<BookAppointment />} />
+        <Route path="/appointments" element={<MyAppointments />} />
+        <Route path="/doctors" element={<DoctorsList />} /> {/* ADDED THIS */}
 
-        {/* Optional: Alias for "/dashboard" 
-          If any of your code uses navigate("/dashboard"), 
-          this ensures it goes to the right place.
-        */}
+        {/* Alias for "/dashboard" */}
         <Route path="/dashboard" element={<Navigate to="/patient-dashboard" replace />} />
 
-        {/* Catch-all: Redirect unknown routes to Login */}
+        {/* Catch-all */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>
