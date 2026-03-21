@@ -7,7 +7,7 @@ const appointmentSchema = new mongoose.Schema(
       ref: "User",
       required: true
     },
-    patientName: { // ADDED THIS FIELD - Database will now accept this key
+    patientName: { 
       type: String,
       required: true
     },
@@ -35,6 +35,11 @@ const appointmentSchema = new mongoose.Schema(
     age: { type: String },
     bloodGroup: { type: String },
     symptoms: { type: String },
+    // --- NEW FIELD FOR UPLOADED REPORT ---
+    medicalReport: { 
+      type: String,
+      default: null 
+    },
     status: {
       type: String,
       default: "Pending"

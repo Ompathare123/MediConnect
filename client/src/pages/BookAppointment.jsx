@@ -124,29 +124,41 @@ const BookAppointmentPage = () => {
     if (!formData.doctorId || formData.doctorId === "null") {
         return alert("Please select a valid doctor.");
     }
+    
     try {
       const token = localStorage.getItem("token");
-      const payload = { 
-        patientName: formData.patientName, // Match Schema Key
-        doctorId: formData.doctorId, 
-        doctorName: selectedDoctor?.name, 
-        department: formData.department, 
-        appointmentDate: formData.appointmentDate, 
-        timeSlot: formData.timeSlot,
-        age: formData.age,
-        bloodGroup: formData.bloodGroup,
-        symptoms: formData.symptoms
-      };
-      const res = await axios.post("http://localhost:5000/api/appointments", payload, {
-        headers: { Authorization: `Bearer ${token}` }
+      
+      // --- CRITICAL CHANGE: USE FORMDATA FOR FILE UPLOAD ---
+      const data = new FormData();
+      data.append("patientName", formData.patientName);
+      data.append("doctorId", formData.doctorId);
+      data.append("doctorName", selectedDoctor?.name || "");
+      data.append("department", formData.department);
+      data.append("appointmentDate", formData.appointmentDate);
+      data.append("timeSlot", formData.timeSlot);
+      data.append("age", formData.age);
+      data.append("bloodGroup", formData.bloodGroup);
+      data.append("symptoms", formData.symptoms);
+      
+      // The key "medicalReport" MUST match upload.single("medicalReport") in your backend routes
+      if (formData.medicalReports) {
+        data.append("medicalReport", formData.medicalReports);
+      }
+
+      const res = await axios.post("http://localhost:5000/api/appointments", data, {
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "multipart/form-data" 
+        }
       });
+
       if (res.status === 201 || res.data.success) { 
         setSuccessMessage(true); 
         setTimeout(() => navigate("/patient-dashboard"), 2000); 
       }
     } catch (error) { 
       console.error("Full Booking Error:", error.response?.data);
-      const errorMsg = error.response?.data?.message || "Server error while booking. Please try again.";
+      const errorMsg = error.response?.data?.message || "Server error while booking.";
       alert(errorMsg); 
     }
   };

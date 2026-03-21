@@ -1,7 +1,7 @@
 const Appointment = require("../models/Appointment");
 const Doctor = require("../models/Doctor");
 
-// CREATE APPOINTMENT (No changes here)
+// CREATE APPOINTMENT
 exports.createAppointment = async (req, res) => {
   try {
     const { 
@@ -20,6 +20,10 @@ exports.createAppointment = async (req, res) => {
       return res.status(401).json({ message: "User not authorized. Please login again." });
     }
 
+    // --- LOGIC FOR FILE UPLOAD ---
+    // req.file is populated by multer in the route
+    const medicalReport = req.file ? req.file.filename : null;
+
     const appointment = new Appointment({
       user: req.user.id,
       patientName,
@@ -30,17 +34,19 @@ exports.createAppointment = async (req, res) => {
       timeSlot,
       age,
       bloodGroup,
-      symptoms
+      symptoms,
+      medicalReport // SAVING THE FILENAME TO DB
     });
 
     await appointment.save();
     res.status(201).json({ success: true, message: "Appointment booked successfully", appointment });
   } catch (error) {
+    console.error("Booking Error Trace:", error);
     res.status(500).json({ message: "Server error during booking", error: error.message });
   }
 };
 
-// GET USER APPOINTMENTS (No changes here)
+// GET USER APPOINTMENTS (Logic preserved)
 exports.getMyAppointments = async (req, res) => {
   try {
     let query = {};
@@ -61,19 +67,14 @@ exports.getMyAppointments = async (req, res) => {
   }
 };
 
-// --- NEW: DELETE (CANCEL) APPOINTMENT ---
+// DELETE (CANCEL) APPOINTMENT (Logic preserved)
 exports.deleteAppointment = async (req, res) => {
   try {
     const appointment = await Appointment.findById(req.params.id);
-
     if (!appointment) {
       return res.status(404).json({ message: "Appointment not found" });
     }
-
-    // Security check: Only the patient who booked it or the assigned doctor can cancel
     const isPatient = appointment.user.toString() === req.user.id;
-    
-    // For doctor check, we find their profile first
     let isDoctor = false;
     if (req.user.role === 'doctor') {
       const doctorProfile = await Doctor.findOne({ userId: req.user.id });
@@ -81,16 +82,49 @@ exports.deleteAppointment = async (req, res) => {
         isDoctor = true;
       }
     }
-
     if (!isPatient && !isDoctor) {
       return res.status(401).json({ message: "User not authorized to cancel this appointment" });
     }
-
     await appointment.deleteOne();
     res.json({ success: true, message: "Appointment cancelled successfully" });
-
   } catch (error) {
     console.error("Delete Error:", error);
     res.status(500).json({ message: "Server error while cancelling appointment" });
+  }
+};
+
+// UPDATE APPOINTMENT STATUS (Logic preserved)
+exports.updateAppointmentStatus = async (req, res) => {
+  try {
+    const { status } = req.body;
+    const { id } = req.params;
+
+    if (!status) {
+      return res.status(400).json({ message: "Status is required" });
+    }
+
+    if (req.user.role !== "doctor") {
+      return res.status(403).json({ message: "Only doctors can update appointment status" });
+    }
+
+    const appointment = await Appointment.findByIdAndUpdate(
+      id,
+      { status },
+      { new: true }
+    );
+
+    if (!appointment) {
+      return res.status(404).json({ message: "Appointment not found" });
+    }
+
+    res.json({ 
+      success: true, 
+      message: `Appointment marked as ${status}`, 
+      appointment 
+    });
+
+  } catch (error) {
+    console.error("Update Status Error:", error);
+    res.status(500).json({ message: "Server error while updating status" });
   }
 };
