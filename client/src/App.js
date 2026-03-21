@@ -7,7 +7,8 @@ import BookAppointment from "./pages/BookAppointment";
 import Doctor from "./pages/Doctor";
 import AdminDashboard from './pages/AdminDashboard';
 import MyAppointments from "./pages/MyAppointments";
-import DoctorsList from "./pages/DoctorsList"; // ADDED THIS
+import DoctorsList from "./pages/DoctorsList";
+import Prescriptions from "./pages/Prescriptions"; // ADDED THIS
 
 function App() {
   return (
@@ -28,11 +29,12 @@ function App() {
         <Route path="/patient-dashboard" element={<PatientDashboard />} />
         <Route path="/book-appointment" element={<BookAppointment />} />
         <Route path="/appointments" element={<MyAppointments />} />
-        <Route path="/doctors" element={<DoctorsList />} /> {/* ADDED THIS */}
+        <Route path="/doctors" element={<DoctorsList />} />
+        <Route path="/prescriptions" element={<Prescriptions />} /> {/* ADDED THIS */}
 
         {/* Alias for "/dashboard" */}
         <Route path="/dashboard" element={<Navigate to="/patient-dashboard" replace />} />
-
+        
         {/* Catch-all */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
