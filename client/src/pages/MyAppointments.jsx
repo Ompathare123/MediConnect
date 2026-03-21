@@ -11,7 +11,8 @@ import {
   FaUser,
   FaSignOutAlt,
   FaChevronLeft,
-  FaClock
+  FaClock,
+  FaTrashAlt // Added for cancel action
 } from "react-icons/fa";
 
 const MyAppointments = () => {
@@ -30,22 +31,40 @@ const MyAppointments = () => {
     { icon: FaUser, label: "Profile", path: "/profile" },
   ];
 
+  const fetchAppointments = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await axios.get("http://localhost:5000/api/appointments", {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setAppointments(res.data);
+    } catch (error) {
+      console.error("Error fetching appointments:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchAppointments = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        const res = await axios.get("http://localhost:5000/api/appointments", {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        setAppointments(res.data);
-      } catch (error) {
-        console.error("Error fetching appointments:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchAppointments();
   }, []);
+
+  const handleCancelAppointment = async (id) => {
+    if (!window.confirm("Are you sure you want to cancel this appointment?")) return;
+
+    try {
+      const token = localStorage.getItem("token");
+      await axios.delete(`http://localhost:5000/api/appointments/${id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      alert("Appointment cancelled successfully.");
+      fetchAppointments(); // Refresh the list
+    } catch (error) {
+      console.error("Cancellation Error:", error);
+      alert("Failed to cancel appointment.");
+    }
+  };
 
   const handleLogout = () => {
     localStorage.clear();
@@ -109,14 +128,15 @@ const MyAppointments = () => {
                       <th className="px-8 py-6 font-bold">Doctor Details</th>
                       <th className="px-8 py-6 font-bold">Appointment Date</th>
                       <th className="px-8 py-6 font-bold">Status</th>
+                      <th className="px-8 py-6 font-bold text-center">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-50">
                     {loading ? (
-                      <tr><td colSpan="3" className="py-20 text-center text-slate-400 font-bold italic animate-pulse">Loading appointments...</td></tr>
+                      <tr><td colSpan="4" className="py-20 text-center text-slate-400 font-bold italic animate-pulse">Loading appointments...</td></tr>
                     ) : appointments.length === 0 ? (
                       <tr>
-                        <td colSpan="3" className="py-24 text-center">
+                        <td colSpan="4" className="py-24 text-center">
                           <FaClock className="mx-auto text-blue-100 text-6xl mb-4" />
                           <p className="text-slate-400 font-bold">No appointments found.</p>
                           <button onClick={() => navigate("/book-appointment")} className="mt-4 text-blue-600 font-black text-sm uppercase hover:underline">Book your first session</button>
@@ -146,6 +166,17 @@ const MyAppointments = () => {
                             }`}>
                               {apt.status || "Pending"}
                             </span>
+                          </td>
+                          <td className="px-8 py-6 text-center">
+                            {apt.status !== "Completed" && (
+                              <button 
+                                onClick={() => handleCancelAppointment(apt._id)}
+                                className="p-2 text-gray-300 hover:text-red-500 transition-all hover:scale-110"
+                                title="Cancel Appointment"
+                              >
+                                <FaTrashAlt size={16} />
+                              </button>
+                            )}
                           </td>
                         </tr>
                       ))

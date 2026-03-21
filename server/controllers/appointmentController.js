@@ -1,11 +1,11 @@
 const Appointment = require("../models/Appointment");
 const Doctor = require("../models/Doctor");
 
-// CREATE APPOINTMENT
+// CREATE APPOINTMENT (No changes here)
 exports.createAppointment = async (req, res) => {
   try {
     const { 
-      patientName, // Extract from body
+      patientName,
       doctorId, 
       doctorName, 
       department, 
@@ -20,13 +20,9 @@ exports.createAppointment = async (req, res) => {
       return res.status(401).json({ message: "User not authorized. Please login again." });
     }
 
-    if (!doctorId || doctorId === "null") {
-        return res.status(400).json({ message: "Doctor selection is invalid. Please select the doctor again." });
-    }
-
     const appointment = new Appointment({
       user: req.user.id,
-      patientName, // Save to database
+      patientName,
       doctorId,
       doctorName,
       department,
@@ -38,23 +34,13 @@ exports.createAppointment = async (req, res) => {
     });
 
     await appointment.save();
-
-    res.status(201).json({
-      success: true,
-      message: "Appointment booked successfully",
-      appointment
-    });
-
+    res.status(201).json({ success: true, message: "Appointment booked successfully", appointment });
   } catch (error) {
-    console.error("Booking Error Trace:", error);
-    res.status(500).json({ 
-        message: "Server error during booking", 
-        error: error.message 
-    });
+    res.status(500).json({ message: "Server error during booking", error: error.message });
   }
 };
 
-// GET USER APPOINTMENTS
+// GET USER APPOINTMENTS (No changes here)
 exports.getMyAppointments = async (req, res) => {
   try {
     let query = {};
@@ -71,7 +57,40 @@ exports.getMyAppointments = async (req, res) => {
     const appointments = await Appointment.find(query).sort({ createdAt: -1 });
     res.json(appointments);
   } catch (error) {
-    console.error("Fetch Appointments Error:", error);
     res.status(500).json({ message: "Server error fetching appointments" });
+  }
+};
+
+// --- NEW: DELETE (CANCEL) APPOINTMENT ---
+exports.deleteAppointment = async (req, res) => {
+  try {
+    const appointment = await Appointment.findById(req.params.id);
+
+    if (!appointment) {
+      return res.status(404).json({ message: "Appointment not found" });
+    }
+
+    // Security check: Only the patient who booked it or the assigned doctor can cancel
+    const isPatient = appointment.user.toString() === req.user.id;
+    
+    // For doctor check, we find their profile first
+    let isDoctor = false;
+    if (req.user.role === 'doctor') {
+      const doctorProfile = await Doctor.findOne({ userId: req.user.id });
+      if (doctorProfile && appointment.doctorId.toString() === doctorProfile._id.toString()) {
+        isDoctor = true;
+      }
+    }
+
+    if (!isPatient && !isDoctor) {
+      return res.status(401).json({ message: "User not authorized to cancel this appointment" });
+    }
+
+    await appointment.deleteOne();
+    res.json({ success: true, message: "Appointment cancelled successfully" });
+
+  } catch (error) {
+    console.error("Delete Error:", error);
+    res.status(500).json({ message: "Server error while cancelling appointment" });
   }
 };

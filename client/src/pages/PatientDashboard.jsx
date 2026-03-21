@@ -12,7 +12,8 @@ import {
   FaSignOutAlt,
   FaBell,
   FaHospitalUser,
-  FaChevronLeft
+  FaChevronLeft,
+  FaTrashAlt // Added for Cancel action
 } from "react-icons/fa";
 
 const PatientDashboard = () => {
@@ -61,6 +62,26 @@ const PatientDashboard = () => {
       console.error("Error fetching dashboard data:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // --- NEW: CANCEL APPOINTMENT HANDLER ---
+  const handleCancelAppointment = async (id) => {
+    if (!window.confirm("Are you sure you want to cancel this appointment?")) return;
+
+    try {
+      const token = localStorage.getItem("token");
+      // Assuming your backend has a DELETE route or an UPDATE route for cancellation
+      await axios.delete(`http://localhost:5000/api/appointments/${id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      // Refresh data after successful cancellation
+      alert("Appointment cancelled successfully.");
+      fetchDashboardData();
+    } catch (error) {
+      console.error("Cancellation Error:", error);
+      alert("Failed to cancel appointment. Please try again.");
     }
   };
 
@@ -166,13 +187,14 @@ const PatientDashboard = () => {
                       <th className="pb-4 font-bold text-left">Department</th>
                       <th className="pb-4 font-bold text-left">Date & Time</th>
                       <th className="pb-4 font-bold text-left">Status</th>
+                      <th className="pb-4 font-bold text-center">Action</th>
                     </tr>
                   </thead>
                   <tbody className="text-sm">
                     {loading ? (
-                      <tr><td colSpan="4" className="py-10 text-center text-gray-400 italic">Loading...</td></tr>
+                      <tr><td colSpan="5" className="py-10 text-center text-gray-400 italic">Loading...</td></tr>
                     ) : appointments.filter(a => a.status === "Pending" || a.status === "Confirmed").length === 0 ? (
-                      <tr><td colSpan="4" className="py-10 text-center text-gray-400">No upcoming visits. <button onClick={() => navigate("/book-appointment")} className="text-blue-600 font-bold">Book now</button></td></tr>
+                      <tr><td colSpan="5" className="py-10 text-center text-gray-400">No upcoming visits. <button onClick={() => navigate("/book-appointment")} className="text-blue-600 font-bold">Book now</button></td></tr>
                     ) : (
                       appointments
                         .filter(a => a.status === "Pending" || a.status === "Confirmed")
@@ -191,6 +213,16 @@ const PatientDashboard = () => {
                             }`}>
                               {apt.status || "Pending"}
                             </span>
+                          </td>
+                          {/* CANCEL BUTTON CELL */}
+                          <td className="py-5 text-center">
+                            <button 
+                              onClick={() => handleCancelAppointment(apt._id)}
+                              className="p-2 text-gray-300 hover:text-red-500 transition-colors"
+                              title="Cancel Appointment"
+                            >
+                              <FaTrashAlt size={16} />
+                            </button>
                           </td>
                         </tr>
                       ))

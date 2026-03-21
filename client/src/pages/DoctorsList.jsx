@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import {
   FaBars, FaTachometerAlt, FaCalendarPlus, FaCalendarCheck, FaFileMedical,
-  FaFilePrescription, FaUser, FaChevronLeft, FaStethoscope
+  FaFilePrescription, FaUser, FaChevronLeft, FaStethoscope, FaSignOutAlt, FaBell
 } from "react-icons/fa";
 
 const DoctorsList = () => {
@@ -36,6 +36,11 @@ const DoctorsList = () => {
     fetchDoctors();
   }, []);
 
+  const handleLogout = () => {
+    localStorage.clear();
+    navigate("/");
+  };
+
   return (
     <div className="flex h-screen bg-[#F8FAFC] overflow-hidden text-left">
       {/* Sidebar */}
@@ -54,12 +59,38 @@ const DoctorsList = () => {
             </button>
           ))}
         </nav>
+        {/* Logout Button at bottom of sidebar */}
+        <div className="px-3 pb-6 border-t border-blue-500/50 pt-4">
+          <button 
+            onClick={handleLogout}
+            className={`w-full flex items-center ${isCollapsed ? "justify-center" : "space-x-4"} px-4 py-3 rounded-xl hover:bg-red-500/20 transition-all duration-200 text-red-100`}
+            title={isCollapsed ? "Logout" : ""}
+          >
+            <div className="flex-shrink-0"><FaSignOutAlt size={20} /></div>
+            {!isCollapsed && <span className="whitespace-nowrap font-medium">Logout</span>}
+          </button>
+        </div>
       </div>
 
       <div className="flex-1 flex flex-col h-full overflow-hidden">
         <header className="h-20 bg-white shadow-sm border-b border-gray-100 px-8 flex justify-between items-center shrink-0">
           <h1 className="text-2xl font-bold text-blue-700">Our Doctors</h1>
-          <img src={`https://ui-avatars.com/api/?name=${userName}&background=random&color=fff`} alt="profile" className="w-10 h-10 rounded-full border-2 border-blue-100" />
+          
+          <div className="flex items-center space-x-6">
+            {/* Notification Icon */}
+            <div className="relative cursor-pointer hover:bg-gray-50 p-2 rounded-full transition">
+              <FaBell className="text-gray-600 text-xl" />
+              <span className="absolute top-1 right-1 bg-red-500 text-white text-[10px] w-4 h-4 flex items-center justify-center rounded-full border-2 border-white">3</span>
+            </div>
+            
+            <div className="flex items-center space-x-3 border-l pl-6 border-gray-100">
+              <div className="text-right hidden sm:block">
+                <p className="text-sm font-bold text-gray-800 leading-none">{userName}</p>
+                <p className="text-[11px] text-gray-400 mt-1 uppercase font-semibold">Verified Patient</p>
+              </div>
+              <img src={`https://ui-avatars.com/api/?name=${userName}&background=random&color=fff`} alt="profile" className="w-10 h-10 rounded-full border-2 border-blue-100" />
+            </div>
+          </div>
         </header>
 
         <div className="flex-1 overflow-y-auto bg-[#F8FAFC] p-8">
