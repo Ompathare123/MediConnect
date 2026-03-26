@@ -1,11 +1,46 @@
 const Appointment = require("../models/Appointment");
 const Doctor = require("../models/Doctor");
+const Schedule = require("../models/Schedule"); // Added Schedule model import
 
-// CREATE APPOINTMENT
+// CREATE APPOINTMENT (With Max Patients Logic)
 exports.createAppointment = async (req, res) => {
   try {
-    const { patientName, doctorId, doctorName, department, appointmentDate, timeSlot, age, bloodGroup, symptoms } = req.body;
+    const { 
+      patientName, doctorId, doctorName, department, 
+      appointmentDate, timeSlot, age, bloodGroup, symptoms 
+    } = req.body;
     const medicalReport = req.file ? req.file.filename : null;
+
+    // --- NEW: MAX PATIENTS LOGIC ---
+    // 1. Find the doctor's schedule for that specific date
+    const schedule = await Schedule.findOne({ doctorId, date: appointmentDate });
+    
+    if (!schedule) {
+      return res.status(404).json({ message: "Doctor is not available on this date." });
+    }
+
+    // 2. Find the specific time slot within that schedule
+    const slot = schedule.slots.find(s => s.time === timeSlot);
+    
+    if (!slot) {
+      return res.status(404).json({ message: "Selected time slot is not found in the schedule." });
+    }
+
+    // 3. Count existing active (non-cancelled) appointments for this specific slot
+    const existingCount = await Appointment.countDocuments({
+      doctorId,
+      appointmentDate,
+      timeSlot,
+      status: { $ne: "Cancelled" } // Do not count cancelled appointments against the limit
+    });
+
+    // 4. Validate against the maxPatients limit defined by the doctor
+    if (existingCount >= slot.maxPatients) {
+      return res.status(400).json({ 
+        message: `This slot is fully booked. Maximum limit of ${slot.maxPatients} patients reached.` 
+      });
+    }
+    // --- END OF MAX PATIENTS LOGIC ---
 
     const appointment = new Appointment({
       user: req.user.id,
@@ -29,7 +64,7 @@ exports.createAppointment = async (req, res) => {
   }
 };
 
-// GET USER APPOINTMENTS
+// GET USER APPOINTMENTS (Unchanged)
 exports.getMyAppointments = async (req, res) => {
   try {
     let query = {};
@@ -50,7 +85,7 @@ exports.getMyAppointments = async (req, res) => {
   }
 };
 
-// --- NEW: ADD PRESCRIPTION LOGIC ---
+// ADD PRESCRIPTION LOGIC (Unchanged)
 exports.addPrescription = async (req, res) => {
   try {
     const { medicines, advice } = req.body;
@@ -64,7 +99,7 @@ exports.addPrescription = async (req, res) => {
       id,
       { 
         prescription: { medicines, advice },
-        status: "Completed" // Auto-complete when prescription is issued
+        status: "Completed" 
       },
       { new: true }
     );
@@ -78,7 +113,7 @@ exports.addPrescription = async (req, res) => {
   }
 };
 
-// UPDATE STATUS
+// UPDATE STATUS (Unchanged)
 exports.updateAppointmentStatus = async (req, res) => {
   try {
     const { status } = req.body;
@@ -94,7 +129,7 @@ exports.updateAppointmentStatus = async (req, res) => {
   }
 };
 
-// DELETE APPOINTMENT
+// DELETE APPOINTMENT (Unchanged)
 exports.deleteAppointment = async (req, res) => {
   try {
     const appointment = await Appointment.findById(req.params.id);

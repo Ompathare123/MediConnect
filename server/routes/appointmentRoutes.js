@@ -9,7 +9,7 @@ const {
   getMyAppointments,
   deleteAppointment,
   updateAppointmentStatus,
-  addPrescription // Imported
+  addPrescription
 } = require("../controllers/appointmentController");
 
 const { protect } = require("../middleware/authMiddleware");
@@ -32,8 +32,6 @@ router.post("/", protect, upload.single("medicalReport"), createAppointment);
 router.get("/", protect, getMyAppointments);
 router.delete("/:id", protect, deleteAppointment);
 router.put("/:id", protect, updateAppointmentStatus);
-
-// --- NEW ROUTE FOR PRESCRIPTION BUILDER ---
 router.put("/:id/prescription", protect, addPrescription);
 
 module.exports = router;

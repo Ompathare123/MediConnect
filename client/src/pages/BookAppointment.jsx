@@ -83,6 +83,7 @@ const BookAppointmentPage = () => {
       }
       setLoadingSlots(true);
       try {
+        // This endpoint should ideally return { time, maxPatients, currentBookings }
         const response = await axios.get(`http://localhost:5000/api/schedule/get`, {
           params: { 
             doctorId: formData.doctorId, 
@@ -127,8 +128,6 @@ const BookAppointmentPage = () => {
     
     try {
       const token = localStorage.getItem("token");
-      
-      // --- CRITICAL CHANGE: USE FORMDATA FOR FILE UPLOAD ---
       const data = new FormData();
       data.append("patientName", formData.patientName);
       data.append("doctorId", formData.doctorId);
@@ -140,7 +139,6 @@ const BookAppointmentPage = () => {
       data.append("bloodGroup", formData.bloodGroup);
       data.append("symptoms", formData.symptoms);
       
-      // The key "medicalReport" MUST match upload.single("medicalReport") in your backend routes
       if (formData.medicalReports) {
         data.append("medicalReport", formData.medicalReports);
       }
@@ -158,6 +156,7 @@ const BookAppointmentPage = () => {
       }
     } catch (error) { 
       console.error("Full Booking Error:", error.response?.data);
+      // This will now catch the "Slot Fully Booked" error from backend
       const errorMsg = error.response?.data?.message || "Server error while booking.";
       alert(errorMsg); 
     }
@@ -193,7 +192,7 @@ const BookAppointmentPage = () => {
         <div className="px-3 pb-6 border-t border-blue-500/50 pt-4">
           <button 
             onClick={handleLogout}
-            className={`w-full flex items-center ${isCollapsed ? "justify-center" : "space-x-3"} px-4 py-3 rounded-xl hover:bg-red-500/20 transition-all duration-200 text-red-100`}
+            className={`w-full flex items-center ${isCollapsed ? "justify-center" : "space-x-3"} px-4 py-3 rounded-xl hover:bg-red-500/20 text-red-100 transition-all duration-200`}
             title={isCollapsed ? "Logout" : ""}
           >
             <div className="flex-shrink-0"><FaSignOutAlt size={20} /></div>
@@ -295,7 +294,14 @@ const BookAppointmentPage = () => {
                             <option value="">{loadingSlots ? "Loading..." : "Time"}</option>
                             {availableSlots.length > 0 ? (
                                 availableSlots.map((slot, index) => (
-                                    <option key={index} value={slot.time}>{slot.time}</option>
+                                    <option 
+                                      key={index} 
+                                      value={slot.time}
+                                      // DISABLED LOGIC: If your backend provides a property like 'isFull'
+                                      disabled={slot.isFull} 
+                                    >
+                                      {slot.time} {slot.isFull ? "(Full)" : ""}
+                                    </option>
                                 ))
                             ) : (
                                 formData.appointmentDate && !loadingSlots && <option disabled>No Slots Available</option>
@@ -386,6 +392,16 @@ const BookAppointmentPage = () => {
           <div className="text-left"><p className="font-bold text-gray-800 leading-none">Success!</p><p className="text-xs text-gray-500 mt-1">Booking confirmed.</p></div>
         </div>
       )}
+      
+      <style dangerouslySetInnerHTML={{ __html: `
+        @keyframes fadeIn {
+          from { opacity: 0; transform: scale(0.95); }
+          to { opacity: 1; transform: scale(1); }
+        }
+        .animate-fadeIn { animation: fadeIn 0.2s ease-out forwards; }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+      `}} />
     </div>
   );
 };

@@ -1,4 +1,5 @@
 const Schedule = require("../models/Schedule");
+const Appointment = require("../models/Appointment"); // Imported to count bookings
 
 exports.getScheduleByDoctor = async (req, res) => {
     try {
@@ -13,8 +14,27 @@ exports.getScheduleByDoctor = async (req, res) => {
 
         // Return only slots that are marked as 'Active'
         const activeSlots = schedule.slots.filter(slot => slot.status === "Active");
+
+        // --- NEW LOGIC: Calculate occupancy for each slot ---
+        const slotsWithAvailability = await Promise.all(activeSlots.map(async (slot) => {
+            // Count active (not cancelled) appointments for this specific slot
+            const bookedCount = await Appointment.countDocuments({
+                doctorId,
+                appointmentDate: date,
+                timeSlot: slot.time,
+                status: { $ne: "Cancelled" }
+            });
+
+            // Convert Mongoose document to plain object and add availability info
+            const slotObj = slot.toObject();
+            return {
+                ...slotObj,
+                currentBookings: bookedCount,
+                isFull: bookedCount >= slot.maxPatients // Boolean flag for frontend
+            };
+        }));
         
-        res.status(200).json(activeSlots);
+        res.status(200).json(slotsWithAvailability);
     } catch (error) {
         console.error("Error fetching schedule:", error);
         res.status(500).json({ message: "Error fetching schedule" });
