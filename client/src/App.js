@@ -8,7 +8,9 @@ import Doctor from "./pages/Doctor";
 import AdminDashboard from './pages/AdminDashboard';
 import MyAppointments from "./pages/MyAppointments";
 import DoctorsList from "./pages/DoctorsList";
-import Prescriptions from "./pages/Prescriptions"; // ADDED THIS
+import Prescriptions from "./pages/Prescriptions";
+// --- ONLY IMPORTING WHAT YOU HAVE CREATED ---
+import PatientProfile from "./pages/PatientProfile";
 
 function App() {
   return (
@@ -30,7 +32,10 @@ function App() {
         <Route path="/book-appointment" element={<BookAppointment />} />
         <Route path="/appointments" element={<MyAppointments />} />
         <Route path="/doctors" element={<DoctorsList />} />
-        <Route path="/prescriptions" element={<Prescriptions />} /> {/* ADDED THIS */}
+        <Route path="/prescriptions" element={<Prescriptions />} />
+        
+        {/* PATIENT PROFILE ROUTE */}
+        <Route path="/profile" element={<PatientProfile />} />
 
         {/* Alias for "/dashboard" */}
         <Route path="/dashboard" element={<Navigate to="/patient-dashboard" replace />} />

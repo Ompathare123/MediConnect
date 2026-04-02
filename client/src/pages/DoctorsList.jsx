@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import {
-  FaBars, FaTachometerAlt, FaCalendarPlus, FaCalendarCheck, FaFileMedical,
+  FaBars, FaTachometerAlt, FaCalendarPlus, FaCalendarCheck,
   FaFilePrescription, FaUser, FaChevronLeft, FaStethoscope, FaSignOutAlt, FaBell
 } from "react-icons/fa";
 
@@ -13,11 +13,11 @@ const DoctorsList = () => {
   const [loading, setLoading] = useState(true);
   const userName = localStorage.getItem("userName") || "Patient";
 
+  // REMOVED MEDICAL RECORDS FROM THIS LIST
   const menuItems = [
     { icon: FaTachometerAlt, label: "Dashboard", path: "/patient-dashboard" },
     { icon: FaCalendarPlus, label: "Book Appointment", path: "/book-appointment" },
     { icon: FaCalendarCheck, label: "My Appointments", path: "/appointments" },
-    { icon: FaFileMedical, label: "Medical Records", path: "/records" },
     { icon: FaFilePrescription, label: "Prescriptions", path: "/prescriptions" },
     { icon: FaUser, label: "Profile", path: "/profile" },
   ];

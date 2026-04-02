@@ -12,29 +12,25 @@ exports.createAppointment = async (req, res) => {
     const medicalReport = req.file ? req.file.filename : null;
 
     // --- NEW: MAX PATIENTS LOGIC ---
-    // 1. Find the doctor's schedule for that specific date
     const schedule = await Schedule.findOne({ doctorId, date: appointmentDate });
     
     if (!schedule) {
       return res.status(404).json({ message: "Doctor is not available on this date." });
     }
 
-    // 2. Find the specific time slot within that schedule
     const slot = schedule.slots.find(s => s.time === timeSlot);
     
     if (!slot) {
       return res.status(404).json({ message: "Selected time slot is not found in the schedule." });
     }
 
-    // 3. Count existing active (non-cancelled) appointments for this specific slot
     const existingCount = await Appointment.countDocuments({
       doctorId,
       appointmentDate,
       timeSlot,
-      status: { $ne: "Cancelled" } // Do not count cancelled appointments against the limit
+      status: { $ne: "Cancelled" } 
     });
 
-    // 4. Validate against the maxPatients limit defined by the doctor
     if (existingCount >= slot.maxPatients) {
       return res.status(400).json({ 
         message: `This slot is fully booked. Maximum limit of ${slot.maxPatients} patients reached.` 
@@ -113,14 +109,22 @@ exports.addPrescription = async (req, res) => {
   }
 };
 
-// UPDATE STATUS (Unchanged)
+// UPDATE STATUS (Updated with Cancellation Note Logic)
 exports.updateAppointmentStatus = async (req, res) => {
   try {
-    const { status } = req.body;
+    const { status, cancellationNote } = req.body; // Accept cancellationNote from request
     const { id } = req.params;
+
     if (req.user.role !== "doctor") return res.status(403).json({ message: "Unauthorized" });
 
-    const appointment = await Appointment.findByIdAndUpdate(id, { status }, { new: true });
+    // Build update object
+    let updateFields = { status };
+    if (status === "Cancelled" && cancellationNote) {
+      updateFields.cancellationNote = cancellationNote;
+    }
+
+    const appointment = await Appointment.findByIdAndUpdate(id, updateFields, { new: true });
+    
     if (!appointment) return res.status(404).json({ message: "Not found" });
 
     res.json({ success: true, appointment });

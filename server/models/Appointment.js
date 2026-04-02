@@ -54,6 +54,11 @@ const appointmentSchema = new mongoose.Schema(
     status: {
       type: String,
       default: "Pending"
+    },
+    // --- NEW: CANCELLATION NOTE ---
+    cancellationNote: {
+      type: String,
+      default: null
     }
   },
   { timestamps: true }

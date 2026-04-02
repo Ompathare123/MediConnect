@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import {
-  FaBars, FaTachometerAlt, FaCalendarPlus, FaCalendarCheck, FaFileMedical,
+  FaBars, FaTachometerAlt, FaCalendarPlus, FaCalendarCheck,
   FaFilePrescription, FaUser, FaSignOutAlt, FaBell,
   FaHospitalUser, FaChevronLeft, FaPaperclip, FaInfoCircle
 } from "react-icons/fa";
@@ -11,14 +11,18 @@ const BookAppointmentPage = () => {
   const navigate = useNavigate();
   const fileInputRef = useRef(null); 
   
-  const [isCollapsed, setIsCollapsed] = useState(true);
+  // --- SYNC SIDEBAR STATE WITH LOCALSTORAGE ---
+  const [isCollapsed, setIsCollapsed] = useState(() => {
+    const savedState = localStorage.getItem("sidebarCollapsed");
+    return savedState !== null ? JSON.parse(savedState) : true;
+  });
+
   const [successMessage, setSuccessMessage] = useState(false);
-  
   const [dbDoctors, setDbDoctors] = useState([]);
   const [loadingDoctors, setLoadingDoctors] = useState(false);
-  
   const [availableSlots, setAvailableSlots] = useState([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
+  const [selectedSlotFee, setSelectedSlotFee] = useState(0);
 
   const userName = localStorage.getItem("userName") || "Patient";
 
@@ -37,11 +41,15 @@ const BookAppointmentPage = () => {
   
   const [selectedDoctor, setSelectedDoctor] = useState(null);
 
+  // Persistence effect for sidebar
+  useEffect(() => {
+    localStorage.setItem("sidebarCollapsed", JSON.stringify(isCollapsed));
+  }, [isCollapsed]);
+
   const menuItems = [
     { icon: FaTachometerAlt, label: "Dashboard", path: "/patient-dashboard" },
     { icon: FaCalendarPlus, label: "Book Appointment", active: true, path: "/book-appointment" },
     { icon: FaCalendarCheck, label: "My Appointments", path: "/appointments" },
-    { icon: FaFileMedical, label: "Medical Records", path: "/records" },
     { icon: FaFilePrescription, label: "Prescriptions", path: "/prescriptions" },
     { icon: FaUser, label: "Profile", path: "/profile" }
   ];
@@ -73,6 +81,7 @@ const BookAppointmentPage = () => {
     setFormData(prev => ({ ...prev, doctorId: '', timeSlot: '' }));
     setSelectedDoctor(null);
     setAvailableSlots([]);
+    setSelectedSlotFee(0);
   }, [formData.department]);
 
   useEffect(() => {
@@ -83,7 +92,6 @@ const BookAppointmentPage = () => {
       }
       setLoadingSlots(true);
       try {
-        // This endpoint should ideally return { time, maxPatients, currentBookings }
         const response = await axios.get(`http://localhost:5000/api/schedule/get`, {
           params: { 
             doctorId: formData.doctorId, 
@@ -100,6 +108,7 @@ const BookAppointmentPage = () => {
     };
     fetchSlots();
     setFormData(prev => ({ ...prev, timeSlot: '' }));
+    setSelectedSlotFee(0);
   }, [formData.doctorId, formData.appointmentDate]);
 
   useEffect(() => {
@@ -115,6 +124,10 @@ const BookAppointmentPage = () => {
     const { name, value, files } = e.target;
     if (name === "medicalReports") {
       setFormData(prev => ({ ...prev, medicalReports: files[0] }));
+    } else if (name === "timeSlot") {
+      const slotObj = availableSlots.find(s => s.time === value);
+      setSelectedSlotFee(slotObj ? slotObj.fee : 0);
+      setFormData(prev => ({ ...prev, [name]: value }));
     } else {
       setFormData(prev => ({ ...prev, [name]: value }));
     }
@@ -155,8 +168,6 @@ const BookAppointmentPage = () => {
         setTimeout(() => navigate("/patient-dashboard"), 2000); 
       }
     } catch (error) { 
-      console.error("Full Booking Error:", error.response?.data);
-      // This will now catch the "Slot Fully Booked" error from backend
       const errorMsg = error.response?.data?.message || "Server error while booking.";
       alert(errorMsg); 
     }
@@ -169,18 +180,37 @@ const BookAppointmentPage = () => {
 
   return (
     <div className="flex h-screen bg-[#F8FAFC] overflow-hidden text-left">
-      {/* Sidebar */}
-      <div className={`${isCollapsed ? "w-20" : "w-64"} bg-gradient-to-b from-blue-600 to-blue-800 text-white min-h-screen shadow-2xl transition-all duration-300 ease-in-out flex flex-col z-50`}>
-        <div className="h-20 px-6 border-b border-blue-50 flex items-center justify-between shrink-0">
-          {!isCollapsed && <h2 className="text-xl font-bold flex items-center space-x-3 whitespace-nowrap overflow-hidden"><span>MediConnect</span></h2>}
-          <button onClick={() => setIsCollapsed(!isCollapsed)} className="p-2 hover:bg-white/10 rounded-lg transition-colors focus:outline-none">
+      {/* Sidebar - Controlled strictly by isCollapsed state */}
+      <div className={`${isCollapsed ? "w-20" : "w-64"} bg-gradient-to-b from-blue-600 to-blue-800 text-white min-h-screen shadow-2xl transition-all duration-300 ease-in-out flex flex-col z-50 sticky top-0 h-screen`}>
+        
+        <div className={`h-20 px-6 border-b border-blue-50 flex items-center ${isCollapsed ? "justify-center" : "justify-between"} shrink-0`}>
+          {!isCollapsed && (
+            <h2 className="text-xl font-bold flex items-center space-x-3 italic whitespace-nowrap overflow-hidden">
+              <FaHospitalUser /> {/* Icon added before MediConnect */}
+              <span>MediConnect</span>
+            </h2>
+          )}
+          {/* ONLY this toggle button handles minimize/expand */}
+          <button 
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              setIsCollapsed(!isCollapsed);
+            }} 
+            className="p-2 hover:bg-white/10 rounded-lg transition-colors focus:outline-none cursor-pointer"
+          >
             {isCollapsed ? <FaBars size={20} /> : <FaChevronLeft size={20} />}
           </button>
         </div>
+
         <nav className="mt-6 px-3 space-y-2 flex-1">
           {menuItems.map((item, index) => (
             <button key={index} 
-              onClick={() => navigate(item.path)}
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                navigate(item.path);
+              }}
               className={`w-full flex items-center ${isCollapsed ? "justify-center" : "space-x-3"} px-4 py-3 rounded-xl transition-all duration-200 ${item.active ? "bg-white/20 shadow-inner" : "hover:bg-white/10"}`}
               title={isCollapsed ? item.label : ""}
             >
@@ -189,8 +219,10 @@ const BookAppointmentPage = () => {
             </button>
           ))}
         </nav>
+
         <div className="px-3 pb-6 border-t border-blue-500/50 pt-4">
           <button 
+            type="button"
             onClick={handleLogout}
             className={`w-full flex items-center ${isCollapsed ? "justify-center" : "space-x-3"} px-4 py-3 rounded-xl hover:bg-red-500/20 text-red-100 transition-all duration-200`}
             title={isCollapsed ? "Logout" : ""}
@@ -209,7 +241,10 @@ const BookAppointmentPage = () => {
               <FaBell className="text-gray-600 text-xl" />
               <span className="absolute top-1 right-1 bg-red-500 text-white text-[10px] w-4 h-4 flex items-center justify-center rounded-full border-2 border-white">3</span>
             </div>
-            <div className="flex items-center space-x-3 border-l pl-6 border-gray-100 text-right">
+            <div 
+               className="flex items-center space-x-3 border-l pl-6 border-gray-100 text-right cursor-pointer"
+               onClick={() => navigate("/profile")}
+            >
               <img src={`https://ui-avatars.com/api/?name=${userName}&background=random&color=fff`} alt="profile" className="w-10 h-10 rounded-full border-2 border-blue-100 object-cover" />
               <div className="hidden sm:block">
                 <p className="text-sm font-bold text-gray-800 leading-none">{userName}</p>
@@ -297,7 +332,6 @@ const BookAppointmentPage = () => {
                                     <option 
                                       key={index} 
                                       value={slot.time}
-                                      // DISABLED LOGIC: If your backend provides a property like 'isFull'
                                       disabled={slot.isFull} 
                                     >
                                       {slot.time} {slot.isFull ? "(Full)" : ""}
@@ -334,13 +368,12 @@ const BookAppointmentPage = () => {
 
                     <div className="flex space-x-4 pt-4">
                       <button type="submit" className="flex-1 bg-blue-600 text-white font-black py-4 rounded-2xl shadow-xl hover:bg-blue-700 active:scale-[0.98] transition-all">Confirm Booking</button>
-                      <button type="reset" onClick={() => {setFormData({...formData, symptoms: '', department: '', doctorId: '', age: '', bloodGroup: '', appointmentDate: '', timeSlot: '', medicalReports: null}); setSelectedDoctor(null); setAvailableSlots([]);}} className="px-8 py-4 border-2 border-gray-100 text-gray-400 font-bold rounded-2xl hover:bg-white hover:text-gray-600 transition-all">Reset</button>
+                      <button type="reset" onClick={() => {setFormData({...formData, symptoms: '', department: '', doctorId: '', age: '', bloodGroup: '', appointmentDate: '', timeSlot: '', medicalReports: null}); setSelectedDoctor(null); setAvailableSlots([]); setSelectedSlotFee(0);}} className="px-8 py-4 border-2 border-gray-100 text-gray-400 font-bold rounded-2xl hover:bg-white hover:text-gray-600 transition-all">Reset</button>
                     </div>
                   </form>
                 </div>
               </div>
 
-              {/* Sidebar Info */}
               <div className="lg:col-span-4 sticky top-0 space-y-6 pb-8 text-left">
                 <div className="bg-white rounded-3xl shadow-sm border border-gray-50 p-8 text-center relative overflow-hidden">
                   {selectedDoctor ? (
@@ -350,7 +383,9 @@ const BookAppointmentPage = () => {
                       <p className="text-blue-600 text-sm font-bold mb-4 uppercase tracking-widest">{selectedDoctor.department}</p>
                       <div className="grid grid-cols-2 gap-4 border-t border-b border-gray-50 py-4 mb-6 text-sm text-left">
                         <div className="shrink-0"><p className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter">Experience</p><p className="font-black text-gray-700 whitespace-nowrap">{selectedDoctor.experience} Years</p></div>
-                        <div className="text-right shrink-0"><p className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter">Fee</p><p className="font-black text-gray-700">₹{selectedDoctor.fees || 0}</p></div>
+                        {selectedDoctor.fees > 0 && (
+                          <div className="text-right shrink-0"><p className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter">Fee</p><p className="font-black text-gray-700">₹{selectedDoctor.fees}</p></div>
+                        )}
                       </div>
                       <div className="text-left mb-6 p-4 bg-blue-50/50 rounded-2xl border border-blue-100/50">
                         <div className="flex items-center space-x-2 text-blue-700 font-bold text-[10px] uppercase mb-2">
@@ -372,11 +407,11 @@ const BookAppointmentPage = () => {
                   <div className="space-y-4">
                     <div className="flex justify-between items-center text-sm font-medium">
                       <span className="text-gray-400 font-bold uppercase text-[10px] tracking-wider">Consultation Fee</span>
-                      <span className="text-slate-800 font-black">₹{selectedDoctor?.fees || 0}</span>
+                      <span className="text-slate-800 font-black">₹{selectedSlotFee}</span>
                     </div>
                     <div className="flex justify-between items-center pt-4 border-t border-gray-50">
                       <span className="text-xs font-black text-slate-800 uppercase tracking-widest">Total Payable</span>
-                      <span className="text-2xl font-black text-slate-800">₹{selectedDoctor?.fees || 0}</span>
+                      <span className="text-2xl font-black text-slate-800">₹{selectedSlotFee}</span>
                     </div>
                   </div>
                 </div>
@@ -394,10 +429,7 @@ const BookAppointmentPage = () => {
       )}
       
       <style dangerouslySetInnerHTML={{ __html: `
-        @keyframes fadeIn {
-          from { opacity: 0; transform: scale(0.95); }
-          to { opacity: 1; transform: scale(1); }
-        }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
         .animate-fadeIn { animation: fadeIn 0.2s ease-out forwards; }
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }

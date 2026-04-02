@@ -6,7 +6,6 @@ import {
   FaTachometerAlt,
   FaCalendarPlus,
   FaCalendarCheck,
-  FaFileMedical,
   FaFilePrescription,
   FaUser,
   FaSignOutAlt,
@@ -17,9 +16,11 @@ import {
 
 const PatientDashboard = () => {
   const navigate = useNavigate();
-  const [isCollapsed, setIsCollapsed] = useState(true);
-  const [userName, setUserName] = useState("Patient");
   
+  // Sidebar state - controlled ONLY by the toggle button
+  const [isCollapsed, setIsCollapsed] = useState(false); // Changed to false by default so it starts expanded
+  
+  const [userName, setUserName] = useState("Patient");
   const [appointments, setAppointments] = useState([]);
   const [stats, setStats] = useState({ upcoming: 0, completed: 0, totalDoctors: 0 });
   const [loading, setLoading] = useState(true);
@@ -74,27 +75,35 @@ const PatientDashboard = () => {
     { icon: FaTachometerAlt, label: "Dashboard", active: true, path: "/patient-dashboard" },
     { icon: FaCalendarPlus, label: "Book Appointment", path: "/book-appointment" },
     { icon: FaCalendarCheck, label: "My Appointments", path: "/appointments" }, 
-    { icon: FaFileMedical, label: "Medical Records", path: "/records" },
     { icon: FaFilePrescription, label: "Prescriptions", path: "/prescriptions" },
     { icon: FaUser, label: "Profile", path: "/profile" },
   ];
 
   return (
     <div className="flex min-h-screen bg-[#F8FAFC]">
-      {/* Sidebar */}
-      <div className={`${isCollapsed ? "w-20" : "w-64"} bg-gradient-to-b from-blue-600 to-blue-800 text-white min-h-screen shadow-2xl transition-all duration-300 ease-in-out flex flex-col z-50`}>
-        <div className={`h-20 px-6 border-b border-blue-50 flex items-center ${isCollapsed ? "justify-center" : "justify-between"}`}>
+      {/* Sidebar - Transition is purely CSS based on isCollapsed state */}
+      <div className={`${isCollapsed ? "w-20" : "w-64"} bg-gradient-to-b from-blue-600 to-blue-800 text-white min-h-screen shadow-2xl transition-all duration-300 ease-in-out flex flex-col z-50 sticky top-0 h-screen`}>
+        
+        {/* Sidebar Header Section */}
+        <div className={`h-20 px-6 border-b border-blue-500/30 flex items-center ${isCollapsed ? "justify-center" : "justify-between"}`}>
           {!isCollapsed && (
             <h2 className="text-xl font-bold flex items-center space-x-3 italic whitespace-nowrap overflow-hidden">
               <FaHospitalUser />
               <span>MediConnect</span>
             </h2>
           )}
-          <button onClick={() => setIsCollapsed(!isCollapsed)} className="p-2 hover:bg-white/10 rounded-lg focus:outline-none">
+          
+          {/* MINIMIZE ARROW BUTTON: This is the ONLY element that toggles the sidebar state */}
+          <button 
+            onClick={() => setIsCollapsed(!isCollapsed)} 
+            className="p-2 hover:bg-white/10 rounded-lg focus:outline-none transition-colors cursor-pointer"
+            title={isCollapsed ? "Expand Sidebar" : "Minimize Sidebar"}
+          >
             {isCollapsed ? <FaBars size={20} /> : <FaChevronLeft size={20} />}
           </button>
         </div>
 
+        {/* Navigation Items - Logic isolated so clicking them does NOT affect isCollapsed */}
         <nav className="mt-6 px-3 space-y-2 flex-1">
           {menuItems.map((item, index) => (
             <button 
@@ -108,22 +117,35 @@ const PatientDashboard = () => {
           ))}
         </nav>
 
+        {/* Logout Section */}
         <div className="px-3 pb-6 border-t border-blue-500/50 pt-4">
-          <button onClick={handleLogout} className={`w-full flex items-center ${isCollapsed ? "justify-center" : "space-x-4"} px-4 py-3 rounded-xl hover:bg-red-500/20 transition-all text-red-100`}>
+          <button 
+            onClick={handleLogout} 
+            className={`w-full flex items-center ${isCollapsed ? "justify-center" : "space-x-4"} px-4 py-3 rounded-xl hover:bg-red-500/20 transition-all text-red-100`}
+          >
             <div className="flex-shrink-0"><FaSignOutAlt size={20} /></div>
             {!isCollapsed && <span className="whitespace-nowrap font-medium">Logout</span>}
           </button>
         </div>
       </div>
 
-      {/* Main Content */}
+      {/* Main Content Area */}
       <div className="flex-1 flex flex-col transition-all duration-300 overflow-hidden h-screen text-left">
         <header className="h-20 bg-white shadow-sm border-b border-gray-100 px-8 flex justify-between items-center shrink-0">
           <h1 className="text-2xl font-bold text-blue-700">Patient Dashboard</h1>
-          <div className="flex items-center space-x-3 pr-4">
-            <img src={`https://ui-avatars.com/api/?name=${userName}&background=random&color=fff`} alt="profile" className="w-10 h-10 rounded-full border-2 border-blue-100 object-cover" />
+          
+          {/* Header Profile Redirection */}
+          <div 
+            className="flex items-center space-x-3 pr-4 cursor-pointer group"
+            onClick={() => navigate("/profile")}
+          >
+            <img 
+              src={`https://ui-avatars.com/api/?name=${userName}&background=random&color=fff`} 
+              alt="profile" 
+              className="w-10 h-10 rounded-full border-2 border-blue-100 object-cover group-hover:border-blue-500 transition-all" 
+            />
             <div className="text-right">
-              <p className="text-sm font-bold text-gray-800 leading-none">{userName}</p>
+              <p className="text-sm font-bold text-gray-800 leading-none group-hover:text-blue-600 transition-colors">{userName}</p>
               <p className="text-[11px] text-gray-400 mt-1 uppercase font-semibold">Verified Patient</p>
             </div>
           </div>
@@ -138,13 +160,13 @@ const PatientDashboard = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {[ 
-                { title: "Upcoming Appointments", value: stats.upcoming, path: "/appointments" }, 
-                { title: "Completed Visits", value: stats.completed, path: "/appointments" }, 
+                { title: "Upcoming Appointments", value: stats.upcoming, path: "/appointments", targetTab: "Pending" }, 
+                { title: "Completed Visits", value: stats.completed, path: "/appointments", targetTab: "Completed" }, 
                 { title: "Total Doctors", value: stats.totalDoctors, path: "/doctors" } 
               ].map((card, i) => (
                 <div 
                   key={i} 
-                  onClick={() => navigate(card.path)}
+                  onClick={() => navigate(card.path, { state: { activeTab: card.targetTab } })}
                   className="bg-white p-6 rounded-3xl shadow-sm border border-gray-50 hover:shadow-md transition duration-300 cursor-pointer group"
                 >
                   <p className="text-gray-400 text-xs font-bold uppercase tracking-wider group-hover:text-blue-600 transition-colors">{card.title}</p>
@@ -156,7 +178,7 @@ const PatientDashboard = () => {
             <div className="bg-white rounded-3xl shadow-sm border border-gray-50 p-8">
               <div className="flex justify-between items-center mb-6">
                 <h3 className="text-lg font-bold text-gray-800">Upcoming Appointments</h3>
-                <button onClick={() => navigate("/appointments")} className="text-blue-600 text-xs font-bold uppercase hover:underline">View All</button>
+                <button onClick={() => navigate("/appointments", { state: { activeTab: "Pending" } })} className="text-blue-600 text-xs font-bold uppercase hover:underline">View All</button>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full border-collapse text-left">
@@ -184,7 +206,7 @@ const PatientDashboard = () => {
                             <p className="text-[11px] text-gray-400">{apt.timeSlot}</p>
                           </td>
                           <td className="py-5">
-                            <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase ${apt.status === "Confirmed" ? "bg-green-50 text-green-600" : "bg-yellow-50 text-yellow-600"}`}>{apt.status}</span>
+                            <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase ${apt.status === "Confirmed" ? "bg-green-100 text-green-600" : "bg-yellow-50 text-yellow-600"}`}>{apt.status}</span>
                           </td>
                           <td className="py-5 text-center">
                             <button onClick={() => handleCancelAppointment(apt._id)} className="p-2 text-gray-300 hover:text-red-500 transition-colors"><FaTrashAlt size={16} /></button>

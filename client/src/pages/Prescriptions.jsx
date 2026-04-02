@@ -8,7 +8,6 @@ import {
   FaTachometerAlt,
   FaCalendarPlus,
   FaCalendarCheck,
-  FaFileMedical,
   FaFilePrescription,
   FaUser,
   FaSignOutAlt,
@@ -16,22 +15,33 @@ import {
   FaDownload,
   FaUserMd,
   FaSearch,
-  FaBell
+  FaBell,
+  FaHospitalUser
 } from "react-icons/fa";
 
 const Prescriptions = () => {
   const navigate = useNavigate();
-  const [isCollapsed, setIsCollapsed] = useState(true);
+
+  // --- SYNC SIDEBAR STATE WITH LOCALSTORAGE ---
+  const [isCollapsed, setIsCollapsed] = useState(() => {
+    const savedState = localStorage.getItem("sidebarCollapsed");
+    return savedState !== null ? JSON.parse(savedState) : true;
+  });
+
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const userName = localStorage.getItem("userName") || "Patient";
 
+  // Sidebar persistence
+  useEffect(() => {
+    localStorage.setItem("sidebarCollapsed", JSON.stringify(isCollapsed));
+  }, [isCollapsed]);
+
   const menuItems = [
     { icon: FaTachometerAlt, label: "Dashboard", path: "/patient-dashboard" },
     { icon: FaCalendarPlus, label: "Book Appointment", path: "/book-appointment" },
     { icon: FaCalendarCheck, label: "My Appointments", path: "/appointments" },
-    { icon: FaFileMedical, label: "Medical Records", path: "/records" },
     { icon: FaFilePrescription, label: "Prescriptions", active: true, path: "/prescriptions" },
     { icon: FaUser, label: "Profile", path: "/profile" },
   ];
@@ -47,7 +57,6 @@ const Prescriptions = () => {
       const res = await axios.get("http://localhost:5000/api/appointments", {
         headers: { Authorization: `Bearer ${token}` }
       });
-      // Filter only completed appointments that have a prescription attached
       const filtered = res.data.filter(apt => apt.status === "Completed" && apt.prescription);
       setAppointments(filtered);
     } catch (error) {
@@ -59,8 +68,6 @@ const Prescriptions = () => {
 
   const downloadPDF = (apt) => {
     const doc = new jsPDF();
-    
-    // Header
     doc.setFontSize(22);
     doc.setTextColor(37, 99, 235);
     doc.text("MediConnect", 105, 20, { align: "center" });
@@ -68,20 +75,16 @@ const Prescriptions = () => {
     doc.setTextColor(100);
     doc.text("Digital Prescription Report", 105, 28, { align: "center" });
     
-    // Info Section
     doc.setTextColor(0);
     doc.setFontSize(11);
     doc.text(`Doctor: ${apt.doctorName}`, 20, 45);
     doc.text(`Department: ${apt.department}`, 20, 52);
     doc.text(`Date: ${apt.appointmentDate}`, 150, 45);
-    
     doc.setLineWidth(0.5);
     doc.line(20, 60, 190, 60);
-    
     doc.text(`Patient Name: ${apt.patientName}`, 20, 70);
     doc.text(`Age/Blood: ${apt.age || 'N/A'} | ${apt.bloodGroup || 'N/A'}`, 20, 77);
 
-    // Medicines Table
     const tableColumn = ["Medicine Name", "Dosage", "Timing"];
     const tableRows = apt.prescription.medicines.map(med => [med.name, med.dosage, med.timing]);
 
@@ -115,26 +118,50 @@ const Prescriptions = () => {
   return (
     <div className="flex h-screen bg-[#F8FAFC] overflow-hidden text-left relative">
       {/* Sidebar */}
-      <div className={`${isCollapsed ? "w-20" : "w-64"} bg-gradient-to-b from-blue-600 to-blue-800 text-white min-h-screen shadow-2xl transition-all duration-300 ease-in-out flex flex-col z-50`}>
-        <div className="h-20 px-6 border-b border-blue-50 flex items-center justify-between shrink-0">
-          {!isCollapsed && <h2 className="text-xl font-bold flex items-center space-x-3 italic"><span>MediConnect</span></h2>}
-          <button onClick={() => setIsCollapsed(!isCollapsed)} className="p-2 hover:bg-white/10 rounded-lg transition-colors focus:outline-none">
+      <div className={`${isCollapsed ? "w-20" : "w-64"} bg-gradient-to-b from-blue-600 to-blue-800 text-white min-h-screen shadow-2xl transition-all duration-300 ease-in-out flex flex-col z-50 sticky top-0 h-screen`}>
+        
+        <div className={`h-20 px-6 border-b border-blue-50 flex items-center ${isCollapsed ? "justify-center" : "justify-between"} shrink-0`}>
+          {!isCollapsed && (
+            <h2 className="text-xl font-bold flex items-center space-x-3 italic whitespace-nowrap overflow-hidden">
+              <FaHospitalUser />
+              <span>MediConnect</span>
+            </h2>
+          )}
+          <button 
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              setIsCollapsed(!isCollapsed);
+            }} 
+            className="p-2 hover:bg-white/10 rounded-lg transition-colors focus:outline-none cursor-pointer"
+          >
             {isCollapsed ? <FaBars size={20} /> : <FaChevronLeft size={20} />}
           </button>
         </div>
+
         <nav className="mt-6 px-3 space-y-2 flex-1">
           {menuItems.map((item, index) => (
             <button key={index} 
-              onClick={() => navigate(item.path)}
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                navigate(item.path);
+              }}
               className={`w-full flex items-center ${isCollapsed ? "justify-center" : "space-x-3"} px-4 py-3 rounded-xl transition-all duration-200 ${item.active ? "bg-white/20 shadow-inner" : "hover:bg-white/10"}`}
+              title={isCollapsed ? item.label : ""}
             >
               <div className="flex-shrink-0"><item.icon size={20} /></div>
               {!isCollapsed && <span className="whitespace-nowrap font-medium">{item.label}</span>}
             </button>
           ))}
         </nav>
+
         <div className="px-3 pb-8">
-          <button onClick={handleLogout} className={`w-full flex items-center ${isCollapsed ? "justify-center" : "space-x-3"} px-4 py-3 rounded-xl hover:bg-red-500/20 text-red-100 transition-all`}>
+          <button 
+            type="button"
+            onClick={handleLogout}
+            className={`w-full flex items-center ${isCollapsed ? "justify-center" : "space-x-3"} px-4 py-3 rounded-xl hover:bg-red-500/20 text-red-100 transition-all`}
+          >
             <div className="flex-shrink-0"><FaSignOutAlt size={20} /></div>
             {!isCollapsed && <span className="whitespace-nowrap font-medium">Logout</span>}
           </button>
@@ -143,7 +170,6 @@ const Prescriptions = () => {
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col h-full overflow-hidden">
-        {/* STANDARD NAVIGATION BAR */}
         <header className="h-20 bg-white shadow-sm border-b border-gray-100 px-8 flex justify-between items-center shrink-0">
           <h1 className="text-2xl font-bold text-blue-700">My Prescriptions</h1>
           <div className="flex items-center space-x-6">
@@ -151,7 +177,10 @@ const Prescriptions = () => {
               <FaBell className="text-gray-600 text-xl" />
               <span className="absolute top-1 right-1 bg-red-500 text-white text-[10px] w-4 h-4 flex items-center justify-center rounded-full border-2 border-white">3</span>
             </div>
-            <div className="flex items-center space-x-3 border-l pl-6 border-gray-100">
+            <div 
+              className="flex items-center space-x-3 border-l pl-6 border-gray-100 cursor-pointer"
+              onClick={() => navigate("/profile")}
+            >
               <img src={`https://ui-avatars.com/api/?name=${userName}&background=random&color=fff`} alt="profile" className="w-10 h-10 rounded-full border-2 border-blue-100 object-cover" />
               <div className="text-left">
                 <p className="text-sm font-bold text-gray-800 leading-none">{userName}</p>
@@ -161,7 +190,7 @@ const Prescriptions = () => {
           </div>
         </header>
 
-        <div className="flex-1 overflow-y-auto bg-[#F8FAFC] p-8">
+        <div className="flex-1 overflow-y-auto bg-[#F8FAFC] p-8 text-left">
           <div className="max-w-6xl mx-auto">
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
               <div>
@@ -181,11 +210,11 @@ const Prescriptions = () => {
               </div>
             </div>
 
-            <div className="bg-white rounded-[2.5rem] shadow-sm border border-gray-50 overflow-hidden">
+            <div className="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead>
-                    <tr className="bg-slate-50/50 text-gray-400 text-[11px] uppercase tracking-widest border-b border-gray-50">
+                    <tr className="bg-slate-50/50 text-gray-400 text-[11px] uppercase tracking-widest border-b border-gray-100">
                       <th className="px-8 py-6 font-bold">Doctor Info</th>
                       <th className="px-8 py-6 font-bold">Visit Date</th>
                       <th className="px-8 py-6 font-bold text-center">Action</th>
@@ -244,6 +273,8 @@ const Prescriptions = () => {
           to { opacity: 1; transform: translateY(0); }
         }
         .animate-fadeIn { animation: fadeIn 0.4s ease-out forwards; }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
       `}} />
     </div>
   );
