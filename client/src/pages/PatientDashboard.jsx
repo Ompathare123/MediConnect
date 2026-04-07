@@ -17,13 +17,22 @@ import {
 const PatientDashboard = () => {
   const navigate = useNavigate();
   
-  // Sidebar state - controlled ONLY by the toggle button
-  const [isCollapsed, setIsCollapsed] = useState(false); // Changed to false by default so it starts expanded
-  
+  // --- FIXED: SIDEBAR PERSISTENCE LOGIC ---
+  // Read state from localStorage so it doesn't reset on navigation/click
+  const [isCollapsed, setIsCollapsed] = useState(() => {
+    const savedState = localStorage.getItem("sidebarCollapsed");
+    return savedState !== null ? JSON.parse(savedState) : false;
+  });
+
   const [userName, setUserName] = useState("Patient");
   const [appointments, setAppointments] = useState([]);
   const [stats, setStats] = useState({ upcoming: 0, completed: 0, totalDoctors: 0 });
   const [loading, setLoading] = useState(true);
+
+  // Save the state to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem("sidebarCollapsed", JSON.stringify(isCollapsed));
+  }, [isCollapsed]);
 
   useEffect(() => {
     const storedName = localStorage.getItem("userName");
@@ -81,7 +90,7 @@ const PatientDashboard = () => {
 
   return (
     <div className="flex min-h-screen bg-[#F8FAFC]">
-      {/* Sidebar - Transition is purely CSS based on isCollapsed state */}
+      {/* Sidebar - Controlled strictly by state persisted in localStorage */}
       <div className={`${isCollapsed ? "w-20" : "w-64"} bg-gradient-to-b from-blue-600 to-blue-800 text-white min-h-screen shadow-2xl transition-all duration-300 ease-in-out flex flex-col z-50 sticky top-0 h-screen`}>
         
         {/* Sidebar Header Section */}
@@ -93,9 +102,12 @@ const PatientDashboard = () => {
             </h2>
           )}
           
-          {/* MINIMIZE ARROW BUTTON: This is the ONLY element that toggles the sidebar state */}
+          {/* ONLY this toggle button changes the isCollapsed state */}
           <button 
-            onClick={() => setIsCollapsed(!isCollapsed)} 
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsCollapsed(!isCollapsed);
+            }} 
             className="p-2 hover:bg-white/10 rounded-lg focus:outline-none transition-colors cursor-pointer"
             title={isCollapsed ? "Expand Sidebar" : "Minimize Sidebar"}
           >
@@ -103,7 +115,7 @@ const PatientDashboard = () => {
           </button>
         </div>
 
-        {/* Navigation Items - Logic isolated so clicking them does NOT affect isCollapsed */}
+        {/* Navigation Items */}
         <nav className="mt-6 px-3 space-y-2 flex-1">
           {menuItems.map((item, index) => (
             <button 
@@ -134,7 +146,6 @@ const PatientDashboard = () => {
         <header className="h-20 bg-white shadow-sm border-b border-gray-100 px-8 flex justify-between items-center shrink-0">
           <h1 className="text-2xl font-bold text-blue-700">Patient Dashboard</h1>
           
-          {/* Header Profile Redirection */}
           <div 
             className="flex items-center space-x-3 pr-4 cursor-pointer group"
             onClick={() => navigate("/profile")}

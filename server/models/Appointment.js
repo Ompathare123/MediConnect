@@ -39,7 +39,7 @@ const appointmentSchema = new mongoose.Schema(
       type: String,
       default: null 
     },
-    // --- NEW: PRESCRIPTION STORAGE ---
+    // --- PRESCRIPTION STORAGE ---
     prescription: {
       medicines: [
         {
@@ -55,7 +55,7 @@ const appointmentSchema = new mongoose.Schema(
       type: String,
       default: "Pending"
     },
-    // --- NEW: CANCELLATION NOTE ---
+    // --- CANCELLATION NOTE ---
     cancellationNote: {
       type: String,
       default: null

@@ -1,8 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
 import {
   FaBars, FaTachometerAlt, FaCalendarCheck, FaUsers, FaUserMd,
-  FaMoneyBillWave, FaFlask, FaFileAlt, FaThLarge, FaStethoscope,
+  FaFlask, FaThLarge, FaStethoscope,
   FaCog, FaSignOutAlt, FaBell, FaHospitalUser, FaChevronLeft,
   FaPlusCircle, FaUserPlus, FaFileInvoice, FaChartLine, FaArrowLeft
 } from "react-icons/fa";
@@ -26,17 +26,22 @@ const COLORS = ["#1e3a8a", "#2563eb", "#93c5fd"];
 
 // --- SUB-COMPONENTS ---
 
-const DashboardHome = ({ quickActions }) => (
+const DashboardHome = ({ quickActions, stats }) => (
   <div className="animate-fadeIn space-y-8 text-left">
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
       {[
-        { label: "TOTAL DOCTORS", value: "84", icon: FaUserMd, color: "text-blue-600" },
-        { label: "TOTAL PATIENTS", value: "1,240", icon: FaUsers, color: "text-blue-500" },
-        { label: "APPOINTMENTS", value: "312", icon: FaCalendarCheck, color: "text-sky-600" },
+        { label: "TOTAL DOCTORS", value: stats.doctors, icon: FaUserMd, color: "text-blue-600" },
+        { label: "TOTAL PATIENTS", value: stats.patients, icon: FaUsers, color: "text-blue-500" },
+        { label: "APPOINTMENTS", value: stats.appointments, icon: FaCalendarCheck, color: "text-sky-600" },
       ].map((stat, i) => (
         <div key={i} className="bg-white p-6 rounded-3xl shadow-sm border border-gray-50 hover:-translate-y-1 transition-all duration-300 group">
           <div className="flex justify-between items-start">
-            <div><p className="text-gray-400 text-[10px] font-black uppercase tracking-widest">{stat.label}</p><h3 className="text-2xl font-black mt-1 text-slate-800">{stat.value}</h3></div>
+            <div>
+              <p className="text-gray-400 text-[10px] font-black uppercase tracking-widest">{stat.label}</p>
+              <h3 className="text-2xl font-black mt-1 text-slate-800">
+                {stat.value}
+              </h3>
+            </div>
             <div className={`p-3 rounded-2xl bg-blue-50 ${stat.color} group-hover:bg-blue-600 group-hover:text-white transition-colors`}><stat.icon size={20} /></div>
           </div>
         </div>
@@ -62,6 +67,57 @@ const DashboardHome = ({ quickActions }) => (
         <h3 className="text-lg font-black text-slate-800 mb-6 uppercase tracking-tighter">Demographics</h3>
         <div className="h-[250px] w-full"><ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={demographicData} innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value" stroke="none">{demographicData.map((entry, index) => (<Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />))}</Pie><Tooltip /><Legend verticalAlign="bottom" height={36} iconType="circle" /></PieChart></ResponsiveContainer></div>
       </div>
+    </div>
+  </div>
+);
+
+const DoctorsList = ({ doctors, setView }) => (
+  <div className="animate-fadeIn space-y-6 text-left pb-10">
+    <div className="flex items-center justify-between">
+      <div>
+        <h2 className="text-2xl font-black text-slate-800 tracking-tight uppercase">Medical Staff</h2>
+        <p className="text-slate-400 text-sm font-medium">View and manage all registered doctors in the system.</p>
+      </div>
+      <button onClick={() => setView("addDoctor")} className="flex items-center gap-2 px-6 py-3 bg-blue-600 rounded-xl text-sm font-bold text-white hover:bg-blue-700 transition shadow-lg">
+        <FaPlusCircle /> Add New Doctor
+      </button>
+    </div>
+
+    <div className="bg-white rounded-[2rem] shadow-sm border border-gray-50 overflow-hidden">
+      <table className="w-full text-left border-collapse">
+        <thead>
+          <tr className="bg-gray-50 border-b border-gray-100">
+            <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Doctor Name</th>
+            <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Department</th>
+            <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Specialization</th>
+            <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Experience</th>
+            <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Contact</th>
+          </tr>
+        </thead>
+        <tbody>
+          {doctors.map((doc, i) => (
+            <tr key={i} className="border-b border-gray-50 hover:bg-blue-50/30 transition-colors">
+              <td className="px-6 py-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-xs uppercase">
+                    {doc.name ? doc.name.charAt(0) : "D"}
+                  </div>
+                  <span className="font-bold text-slate-700 text-sm">{doc.name}</span>
+                </div>
+              </td>
+              <td className="px-6 py-4 text-sm text-slate-600 font-medium">{doc.department}</td>
+              <td className="px-6 py-4 text-sm text-slate-500">{doc.specialization}</td>
+              <td className="px-6 py-4 text-sm text-slate-500 font-bold">{doc.experience} Years</td>
+              <td className="px-6 py-4 text-sm text-slate-500">{doc.email}</td>
+            </tr>
+          ))}
+          {doctors.length === 0 && (
+            <tr>
+              <td colSpan="5" className="px-6 py-10 text-center text-slate-400 font-medium italic">No doctors found in the database.</td>
+            </tr>
+          )}
+        </tbody>
+      </table>
     </div>
   </div>
 );
@@ -153,6 +209,8 @@ const AdminDashboard = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [activeMenu, setActiveMenu] = useState("Dashboard");
   const [view, setView] = useState("dashboard");
+  const [stats, setStats] = useState({ doctors: 0, patients: 0, appointments: 0 });
+  const [doctors, setDoctors] = useState([]);
 
   const [doctorData, setDoctorData] = useState({
     firstName: "", middleName: "", lastName: "",
@@ -160,6 +218,37 @@ const AdminDashboard = () => {
     email: "", phone: "", department: "",
     specialization: "", experience: "", education: ""
   });
+
+  useEffect(() => {
+    fetchDashboardStats();
+  }, [view]);
+
+  const fetchDashboardStats = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const config = { headers: { Authorization: `Bearer ${token}` } };
+
+      const docRes = await axios.get("http://localhost:5000/api/doctors/all", config);
+      const aptRes = await axios.get("http://localhost:5000/api/appointments", config);
+
+      const doctorsList = Array.isArray(docRes.data) ? docRes.data : [];
+      const appointmentsList = Array.isArray(aptRes.data) ? aptRes.data : [];
+      
+      setDoctors(doctorsList);
+
+      const uniquePatients = new Set(
+        appointmentsList.map(a => a.user || a.patientName).filter(Boolean)
+      ).size;
+
+      setStats({
+        doctors: doctorsList.length,
+        patients: uniquePatients,
+        appointments: appointmentsList.length
+      });
+    } catch (error) {
+      console.error("Dashboard Stats Error:", error);
+    }
+  };
 
   const handleDoctorChange = (e) => {
     setDoctorData({ ...doctorData, [e.target.name]: e.target.value });
@@ -182,13 +271,14 @@ const AdminDashboard = () => {
         specialization: doctorData.specialization,
         experience: Number(doctorData.experience) || 0,
         education: doctorData.education,
-        fees: 500 // Logic requirement
+        fees: 500 
       };
 
       const response = await axios.post("http://localhost:5000/api/doctors/add", payload);
       
       if (response.data.success) {
         alert("Doctor saved successfully!");
+        fetchDashboardStats(); 
         setView("dashboard");
         setDoctorData({
           firstName: "", middleName: "", lastName: "",
@@ -208,12 +298,8 @@ const AdminDashboard = () => {
     { icon: FaTachometerAlt, label: "Dashboard", viewTarget: "dashboard" },
     { icon: FaCalendarCheck, label: "Appointments" },
     { type: "label", label: "PEOPLE" },
-    { icon: FaUserMd, label: "Doctors" },
+    { icon: FaUserMd, label: "Doctors", viewTarget: "doctors" },
     { icon: FaUsers, label: "Patients" },
-    { type: "label", label: "FINANCE & MEDICAL" },
-    { icon: FaMoneyBillWave, label: "Billing" },
-    { icon: FaFlask, label: "Laboratory" },
-    { icon: FaFileAlt, label: "Reports" },
     { type: "label", label: "ADMIN" },
     { icon: FaThLarge, label: "Departments" },
     { icon: FaStethoscope, label: "Services" },
@@ -230,11 +316,16 @@ const AdminDashboard = () => {
     { icon: FaChartLine, label: "Reports", color: "bg-blue-800" },
   ];
 
+  const handleLogout = () => {
+    localStorage.clear();
+    window.location.href = "/login";
+  };
+
   return (
-    <div className="flex min-h-screen bg-[#F8FAFC] font-sans">
+    <div className="flex min-h-screen bg-[#F8FAFC] font-sans text-left">
       <div className={`${isCollapsed ? "w-20" : "w-64"} bg-gradient-to-b from-blue-700 to-blue-900 text-white min-h-screen shadow-2xl transition-all duration-300 ease-in-out flex flex-col z-50 shrink-0`}>
         <div className={`h-20 px-6 border-b border-blue-600/50 flex items-center ${isCollapsed ? "justify-center" : "justify-between"}`}>
-          {!isCollapsed && <h2 className="text-xl font-bold flex items-center space-x-3 whitespace-nowrap overflow-hidden italic"><FaHospitalUser /><span>MediConnect</span></h2>}
+          {!isCollapsed && <h2 className="text-xl font-bold flex items-center space-x-3 whitespace-nowrap overflow-hidden italic"><span>MediConnect</span></h2>}
           <button onClick={() => setIsCollapsed(!isCollapsed)} className="p-2 hover:bg-white/10 rounded-lg transition-colors focus:outline-none">{isCollapsed ? <FaBars size={20} /> : <FaChevronLeft size={20} />}</button>
         </div>
         <nav className="mt-4 px-3 space-y-1 flex-1 overflow-y-auto custom-scrollbar text-left">
@@ -242,7 +333,10 @@ const AdminDashboard = () => {
             item.type === "label" ? (!isCollapsed && <p key={index} className="text-[10px] font-bold text-blue-300 px-4 mt-4 mb-1 tracking-widest uppercase">{item.label}</p>) : (
               <button 
                 key={index} 
-                onClick={() => { setActiveMenu(item.label); if(item.viewTarget) setView(item.viewTarget); }} 
+                onClick={() => { 
+                    setActiveMenu(item.label); 
+                    if(item.viewTarget) setView(item.viewTarget); 
+                }} 
                 className={`w-full flex items-center ${isCollapsed ? "justify-center" : "space-x-3"} px-4 py-2.5 rounded-xl transition-all duration-200 ${activeMenu === item.label ? "bg-white/20 shadow-inner" : "hover:bg-white/10"}`}
               >
                 <item.icon size={18} />{!isCollapsed && <span className="text-sm font-medium">{item.label}</span>}
@@ -251,7 +345,7 @@ const AdminDashboard = () => {
           ))}
         </nav>
         <div className="px-3 pb-6 border-t border-blue-600/50 pt-4 text-left">
-          <button className={`w-full flex items-center ${isCollapsed ? "justify-center" : "space-x-3"} px-4 py-3 rounded-xl hover:bg-red-500/20 text-red-100`}>
+          <button onClick={handleLogout} className={`w-full flex items-center ${isCollapsed ? "justify-center" : "space-x-3"} px-4 py-3 rounded-xl hover:bg-red-500/20 text-red-100`}>
             <FaSignOutAlt size={20} />{!isCollapsed && <span className="font-medium">Logout</span>}
           </button>
         </div>
@@ -268,8 +362,8 @@ const AdminDashboard = () => {
               <FaBell className="text-gray-400 text-xl" />
               <span className="absolute top-1 right-1 bg-red-500 text-white text-[10px] w-4 h-4 flex items-center justify-center rounded-full border-2 border-white">5</span>
             </div>
-            <div className="flex items-center space-x-3 border-l pl-6 border-gray-100">
-               <div className="text-right">
+            <div className="flex items-center space-x-3 border-l pl-6 border-gray-100 text-right">
+               <div>
                  <p className="text-sm font-bold text-gray-800 leading-none">Admin Master</p>
                  <p className="text-[10px] text-blue-600 mt-1 uppercase font-bold tracking-tighter">Super Admin Profile</p>
                </div>
@@ -279,7 +373,8 @@ const AdminDashboard = () => {
         </header>
 
         <main className="p-8 space-y-8 overflow-y-auto custom-scrollbar">
-          {view === "dashboard" && <DashboardHome quickActions={quickActions} />}
+          {view === "dashboard" && <DashboardHome quickActions={quickActions} stats={stats} />}
+          {view === "doctors" && <DoctorsList doctors={doctors} setView={setView} />}
           {view === "addDoctor" && (
             <AddDoctorForm 
               setView={setView} 
