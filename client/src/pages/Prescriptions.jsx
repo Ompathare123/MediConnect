@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
+import { downloadPdfWithMobileSupport } from "../utils/pdfDownload";
 import {
   FaBars,
   FaTachometerAlt,
@@ -15,7 +16,6 @@ import {
   FaDownload,
   FaUserMd,
   FaSearch,
-  FaBell,
   FaHospitalUser
 } from "react-icons/fa";
 
@@ -37,6 +37,12 @@ const Prescriptions = () => {
   useEffect(() => {
     localStorage.setItem("sidebarCollapsed", JSON.stringify(isCollapsed));
   }, [isCollapsed]);
+
+  useEffect(() => {
+    if (window.innerWidth < 768) {
+      setIsCollapsed(true);
+    }
+  }, []);
 
   const menuItems = [
     { icon: FaTachometerAlt, label: "Dashboard", path: "/patient-dashboard" },
@@ -66,43 +72,115 @@ const Prescriptions = () => {
     }
   };
 
-  const downloadPDF = (apt) => {
+  const downloadPDF = async (apt) => {
     const doc = new jsPDF();
-    doc.setFontSize(22);
-    doc.setTextColor(37, 99, 235);
-    doc.text("MediConnect", 105, 20, { align: "center" });
-    doc.setFontSize(12);
-    doc.setTextColor(100);
-    doc.text("Digital Prescription Report", 105, 28, { align: "center" });
-    
-    doc.setTextColor(0);
-    doc.setFontSize(11);
-    doc.text(`Doctor: ${apt.doctorName}`, 20, 45);
-    doc.text(`Department: ${apt.department}`, 20, 52);
-    doc.text(`Date: ${apt.appointmentDate}`, 150, 45);
-    doc.setLineWidth(0.5);
-    doc.line(20, 60, 190, 60);
-    doc.text(`Patient Name: ${apt.patientName}`, 20, 70);
-    doc.text(`Age/Blood: ${apt.age || 'N/A'} | ${apt.bloodGroup || 'N/A'}`, 20, 77);
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
 
-    const tableColumn = ["Medicine Name", "Dosage", "Timing"];
-    const tableRows = apt.prescription.medicines.map(med => [med.name, med.dosage, med.timing]);
+    doc.setDrawColor(220, 226, 233);
+    doc.rect(3, 3, pageWidth - 6, pageHeight - 6);
+
+    doc.setFillColor(22, 124, 184);
+    doc.circle(-24, -28, 86, "F");
+    doc.setFillColor(177, 210, 0);
+    doc.circle(-10, -34, 76, "F");
+
+    doc.setFillColor(22, 124, 184);
+    doc.circle(pageWidth + 18, pageHeight + 18, 62, "F");
+    doc.setFillColor(177, 210, 0);
+    doc.circle(pageWidth + 12, pageHeight + 12, 56, "F");
+
+    doc.setTextColor(236, 241, 247);
+    doc.setFontSize(44);
+    doc.text("MediConnect", pageWidth / 2, pageHeight / 2, { align: "center", angle: 32 });
+
+    doc.setTextColor(104, 171, 206);
+    doc.setFontSize(20);
+    doc.setFont("helvetica", "bold");
+    doc.text("MediConnect Hospital", pageWidth - 18, 18, { align: "right" });
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(11);
+    doc.text("Compassionate Care, Advanced Medicine", pageWidth - 18, 26, { align: "right" });
+    doc.setFontSize(9.5);
+    doc.setTextColor(130, 130, 130);
+    doc.text("City Care Road, Pune", pageWidth - 18, 36, { align: "right" });
+    doc.text("+91 98765 43210  |  mediconnect.health", pageWidth - 18, 42, { align: "right" });
+
+    doc.setTextColor(70, 70, 70);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(11);
+    doc.text("Name:", 62, 60);
+    doc.text("Age:", 62, 70);
+    doc.text("Sex:", 108, 70);
+    doc.text("Date:", 146, 70);
+
+    doc.setLineDashPattern([1, 1], 0);
+    doc.line(78, 60, pageWidth - 18, 60);
+    doc.line(74, 70, 103, 70);
+    doc.line(117, 70, 142, 70);
+    doc.line(158, 70, pageWidth - 18, 70);
+    doc.setLineDashPattern([], 0);
+
+    const sexValue = String(apt.gender || apt.sex || "Not Mentioned");
+    doc.text(apt.patientName || "-", 80, 59.5);
+    doc.text(String(apt.age || "-"), 76, 69.5);
+    doc.text(sexValue, 118, 69.5);
+    doc.text(String(apt.appointmentDate || "-"), 160, 69.5);
+
+    const safePrescription = apt.prescription || {};
+    const medicines = Array.isArray(safePrescription.medicines) ? safePrescription.medicines : [];
+
+    const drawSection = (label, value, y) => {
+      doc.setFont("helvetica", "bold");
+      doc.text(`${label}:`, 30, y);
+      doc.setFont("helvetica", "normal");
+      const wrapped = doc.splitTextToSize(value && String(value).trim() ? String(value).trim() : "-", pageWidth - 84);
+      doc.text(wrapped, 78, y);
+      return y + Math.max(8, wrapped.length * 5 + 2);
+    };
+
+    let cursorY = 82;
+    cursorY = drawSection("Chief Complaints", safePrescription.chiefComplaints, cursorY);
+    cursorY = drawSection("Diagnosis", safePrescription.diagnosis, cursorY);
+    cursorY = drawSection("Tests", safePrescription.tests, cursorY);
+    cursorY = drawSection("Allergies", safePrescription.allergies, cursorY);
+    cursorY = drawSection("Follow-up", safePrescription.followUp, cursorY);
+
+    const tableColumn = ["Medicine", "Dosage", "Frequency", "Duration", "Timing"];
+    const tableRows = medicines.map((med) => [
+      med.name || "-",
+      med.dosage || "-",
+      med.frequency || "-",
+      med.duration || "-",
+      med.timing || "-"
+    ]);
 
     autoTable(doc, {
       head: [tableColumn],
-      body: tableRows,
-      startY: 85,
+      body: tableRows.length > 0 ? tableRows : [["-", "-", "-", "-", "-"]],
+      startY: cursorY + 2,
       theme: 'striped',
-      headStyles: { fillColor: [37, 99, 235] }
+      headStyles: { fillColor: [22, 124, 184], textColor: [255, 255, 255], fontStyle: "bold" },
+      alternateRowStyles: { fillColor: [245, 249, 255] },
+      styles: { fontSize: 10, cellPadding: 3 }
     });
 
-    const finalY = doc.lastAutoTable.finalY + 15;
+    const finalY = doc.lastAutoTable.finalY + 10;
     doc.setFont("helvetica", "bold");
     doc.text("Doctor's Advice:", 20, finalY);
     doc.setFont("helvetica", "normal");
-    doc.text(apt.prescription.advice || "No extra advice.", 20, finalY + 8);
+    const wrappedAdvice = doc.splitTextToSize(safePrescription.advice || "No extra advice.", pageWidth - 40);
+    doc.text(wrappedAdvice, 20, finalY + 6);
 
-    doc.save(`Prescription_${apt.appointmentDate}.pdf`);
+    const signatureY = Math.min(pageHeight - 16, finalY + Math.max(16, wrappedAdvice.length * 5 + 12));
+    doc.setDrawColor(120, 120, 120);
+    doc.line(pageWidth - 75, signatureY, pageWidth - 20, signatureY);
+    doc.setFontSize(9);
+    doc.setTextColor(90, 90, 90);
+    doc.text("Authorized Signature", pageWidth - 20, signatureY + 5, { align: "right" });
+
+    const fileName = `Prescription_${(apt.patientName || apt.appointmentDate || "record").replace(/\s+/g, "_")}.pdf`;
+    await downloadPdfWithMobileSupport(doc, fileName);
   };
 
   const handleLogout = () => {
@@ -116,9 +194,9 @@ const Prescriptions = () => {
   );
 
   return (
-    <div className="flex h-screen bg-[#F8FAFC] overflow-hidden text-left relative">
+    <div className="flex min-h-screen bg-gradient-to-b from-[#eaf2ff] via-[#f4f8ff] to-[#edf4ff] overflow-x-hidden text-left relative">
       {/* Sidebar */}
-      <div className={`${isCollapsed ? "w-20" : "w-64"} bg-gradient-to-b from-blue-600 to-blue-800 text-white min-h-screen shadow-2xl transition-all duration-300 ease-in-out flex flex-col z-50 sticky top-0 h-screen`}>
+      <div className={`${isCollapsed ? "-translate-x-full md:translate-x-0 md:w-20" : "translate-x-0 w-64"} fixed md:static inset-y-0 left-0 bg-gradient-to-b from-blue-600 to-blue-800 text-white shadow-2xl transition-all duration-300 ease-in-out flex flex-col z-50`}>
         
         <div className={`h-20 px-6 border-b border-blue-50 flex items-center ${isCollapsed ? "justify-center" : "justify-between"} shrink-0`}>
           {!isCollapsed && (
@@ -156,11 +234,12 @@ const Prescriptions = () => {
           ))}
         </nav>
 
-        <div className="px-3 pb-8">
+        <div className="px-3 pb-6 border-t border-blue-500/50 pt-4">
           <button 
             type="button"
             onClick={handleLogout}
             className={`w-full flex items-center ${isCollapsed ? "justify-center" : "space-x-3"} px-4 py-3 rounded-xl hover:bg-red-500/20 text-red-100 transition-all`}
+            title={isCollapsed ? "Logout" : ""}
           >
             <div className="flex-shrink-0"><FaSignOutAlt size={20} /></div>
             {!isCollapsed && <span className="whitespace-nowrap font-medium">Logout</span>}
@@ -168,21 +247,36 @@ const Prescriptions = () => {
         </div>
       </div>
 
+      {!isCollapsed && (
+        <button
+          type="button"
+          aria-label="Close sidebar"
+          onClick={() => setIsCollapsed(true)}
+          className="fixed inset-0 bg-slate-900/30 z-40 md:hidden"
+        />
+      )}
+
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col h-full overflow-hidden">
-        <header className="h-20 bg-white shadow-sm border-b border-gray-100 px-8 flex justify-between items-center shrink-0">
-          <h1 className="text-2xl font-bold text-blue-700">My Prescriptions</h1>
-          <div className="flex items-center space-x-6">
-            <div className="relative cursor-pointer hover:bg-gray-50 p-2 rounded-full transition">
-              <FaBell className="text-gray-600 text-xl" />
-              <span className="absolute top-1 right-1 bg-red-500 text-white text-[10px] w-4 h-4 flex items-center justify-center rounded-full border-2 border-white">3</span>
-            </div>
+      <div className="flex-1 flex flex-col min-h-screen overflow-hidden w-full">
+        <header className="h-20 bg-white shadow-sm border-b border-gray-100 px-4 md:px-8 flex justify-between items-center shrink-0">
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              className="md:hidden p-2 rounded-lg border border-gray-200 text-slate-600"
+              onClick={() => setIsCollapsed(false)}
+              aria-label="Open sidebar"
+            >
+              <FaBars size={16} />
+            </button>
+            <h1 className="text-xl md:text-2xl font-bold text-blue-700">My Prescriptions</h1>
+          </div>
+          <div className="flex items-center space-x-3">
             <div 
               className="flex items-center space-x-3 border-l pl-6 border-gray-100 cursor-pointer"
               onClick={() => navigate("/profile")}
             >
               <img src={`https://ui-avatars.com/api/?name=${userName}&background=random&color=fff`} alt="profile" className="w-10 h-10 rounded-full border-2 border-blue-100 object-cover" />
-              <div className="text-left">
+              <div className="text-left hidden sm:block">
                 <p className="text-sm font-bold text-gray-800 leading-none">{userName}</p>
                 <p className="text-[11px] text-gray-400 mt-1 uppercase font-semibold">Verified Patient</p>
               </div>
@@ -190,7 +284,7 @@ const Prescriptions = () => {
           </div>
         </header>
 
-        <div className="flex-1 overflow-y-auto bg-[#F8FAFC] p-8 text-left">
+        <div className="flex-1 overflow-y-auto bg-gradient-to-b from-[#edf4ff] via-[#f5f9ff] to-[#edf4ff] p-4 md:p-8 text-left">
           <div className="max-w-6xl mx-auto">
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
               <div>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import toast from "react-hot-toast";
 import {
   FaBars,
   FaTachometerAlt,
@@ -21,7 +22,7 @@ const PatientDashboard = () => {
   // Read state from localStorage so it doesn't reset on navigation/click
   const [isCollapsed, setIsCollapsed] = useState(() => {
     const savedState = localStorage.getItem("sidebarCollapsed");
-    return savedState !== null ? JSON.parse(savedState) : false;
+    return savedState !== null ? JSON.parse(savedState) : true;
   });
 
   const [userName, setUserName] = useState("Patient");
@@ -35,6 +36,12 @@ const PatientDashboard = () => {
   }, [isCollapsed]);
 
   useEffect(() => {
+    if (window.innerWidth < 768) {
+      setIsCollapsed(true);
+    }
+  }, []);
+
+  useEffect(() => {
     const storedName = localStorage.getItem("userName");
     if (storedName) setUserName(storedName);
     fetchDashboardData();
@@ -44,16 +51,40 @@ const PatientDashboard = () => {
     setLoading(true);
     try {
       const token = localStorage.getItem("token");
-      const aptRes = await axios.get("http://localhost:5000/api/appointments", {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setAppointments(aptRes.data);
+      const config = { headers: { Authorization: `Bearer ${token}` } };
 
-      const docRes = await axios.get("http://localhost:5000/api/doctors/all");
-      const upcoming = aptRes.data.filter(a => a.status === "Pending" || a.status === "Confirmed").length;
-      const completed = aptRes.data.filter(a => a.status === "Completed").length;
-      
-      setStats({ upcoming, completed, totalDoctors: docRes.data.length || 0 });
+      const [aptRes, docRes] = await Promise.allSettled([
+        axios.get("http://localhost:5000/api/appointments", config),
+        axios.get("http://localhost:5000/api/doctors/all", config)
+      ]);
+
+      const appointmentsList =
+        aptRes.status === "fulfilled" && Array.isArray(aptRes.value.data)
+          ? aptRes.value.data
+          : [];
+
+      const doctorsList =
+        docRes.status === "fulfilled" && Array.isArray(docRes.value.data)
+          ? docRes.value.data
+          : [];
+
+      setAppointments(appointmentsList);
+
+      const normalizedStatus = (status) => String(status || "").trim().toLowerCase();
+      const upcoming = appointmentsList.filter((a) => {
+        const s = normalizedStatus(a.status);
+        return s === "pending" || s === "confirmed";
+      }).length;
+
+      const completed = appointmentsList.filter(
+        (a) => normalizedStatus(a.status) === "completed"
+      ).length;
+
+      setStats({
+        upcoming,
+        completed,
+        totalDoctors: doctorsList.length
+      });
     } catch (error) {
       console.error("Error fetching dashboard data:", error);
     } finally {
@@ -68,10 +99,10 @@ const PatientDashboard = () => {
       await axios.delete(`http://localhost:5000/api/appointments/${id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      alert("Appointment cancelled successfully.");
+      toast.success("Appointment cancelled successfully.");
       fetchDashboardData();
     } catch (error) {
-      alert("Failed to cancel appointment.");
+      toast.error("Failed to cancel appointment.");
     }
   };
 
@@ -89,12 +120,12 @@ const PatientDashboard = () => {
   ];
 
   return (
-    <div className="flex min-h-screen bg-[#F8FAFC]">
+    <div className="flex min-h-screen bg-gradient-to-b from-[#eaf2ff] via-[#f4f8ff] to-[#edf4ff] overflow-x-hidden text-left relative">
       {/* Sidebar - Controlled strictly by state persisted in localStorage */}
-      <div className={`${isCollapsed ? "w-20" : "w-64"} bg-gradient-to-b from-blue-600 to-blue-800 text-white min-h-screen shadow-2xl transition-all duration-300 ease-in-out flex flex-col z-50 sticky top-0 h-screen`}>
+      <div className={`${isCollapsed ? "-translate-x-full md:translate-x-0 md:w-20" : "translate-x-0 w-64"} fixed md:static inset-y-0 left-0 bg-gradient-to-b from-blue-600 to-blue-800 text-white shadow-2xl transition-all duration-300 ease-in-out flex flex-col z-50`}>
         
         {/* Sidebar Header Section */}
-        <div className={`h-20 px-6 border-b border-blue-500/30 flex items-center ${isCollapsed ? "justify-center" : "justify-between"}`}>
+        <div className={`h-20 px-6 border-b border-blue-50 flex items-center ${isCollapsed ? "justify-center" : "justify-between"} shrink-0`}>
           {!isCollapsed && (
             <h2 className="text-xl font-bold flex items-center space-x-3 italic whitespace-nowrap overflow-hidden">
               <FaHospitalUser />
@@ -104,12 +135,12 @@ const PatientDashboard = () => {
           
           {/* ONLY this toggle button changes the isCollapsed state */}
           <button 
+            type="button"
             onClick={(e) => {
-              e.stopPropagation();
+              e.preventDefault();
               setIsCollapsed(!isCollapsed);
             }} 
-            className="p-2 hover:bg-white/10 rounded-lg focus:outline-none transition-colors cursor-pointer"
-            title={isCollapsed ? "Expand Sidebar" : "Minimize Sidebar"}
+            className="p-2 hover:bg-white/10 rounded-lg transition-colors focus:outline-none cursor-pointer"
           >
             {isCollapsed ? <FaBars size={20} /> : <FaChevronLeft size={20} />}
           </button>
@@ -120,8 +151,10 @@ const PatientDashboard = () => {
           {menuItems.map((item, index) => (
             <button 
               key={index} 
+              type="button"
               onClick={() => navigate(item.path)} 
               className={`w-full flex items-center ${isCollapsed ? "justify-center" : "space-x-3"} px-4 py-3 rounded-xl transition-all duration-200 ${item.active ? "bg-white/20 shadow-inner" : "hover:bg-white/10"}`}
+              title={isCollapsed ? item.label : ""}
             >
               <div className="flex-shrink-0"><item.icon size={20} /></div>
               {!isCollapsed && <span className="whitespace-nowrap font-medium">{item.label}</span>}
@@ -132,8 +165,10 @@ const PatientDashboard = () => {
         {/* Logout Section */}
         <div className="px-3 pb-6 border-t border-blue-500/50 pt-4">
           <button 
+            type="button"
             onClick={handleLogout} 
-            className={`w-full flex items-center ${isCollapsed ? "justify-center" : "space-x-4"} px-4 py-3 rounded-xl hover:bg-red-500/20 transition-all text-red-100`}
+            className={`w-full flex items-center ${isCollapsed ? "justify-center" : "space-x-3"} px-4 py-3 rounded-xl hover:bg-red-500/20 transition-all text-red-100`}
+            title={isCollapsed ? "Logout" : ""}
           >
             <div className="flex-shrink-0"><FaSignOutAlt size={20} /></div>
             {!isCollapsed && <span className="whitespace-nowrap font-medium">Logout</span>}
@@ -141,28 +176,47 @@ const PatientDashboard = () => {
         </div>
       </div>
 
+      {!isCollapsed && (
+        <button
+          type="button"
+          aria-label="Close sidebar"
+          onClick={() => setIsCollapsed(true)}
+          className="fixed inset-0 bg-slate-900/30 z-40 md:hidden"
+        />
+      )}
+
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col transition-all duration-300 overflow-hidden h-screen text-left">
-        <header className="h-20 bg-white shadow-sm border-b border-gray-100 px-8 flex justify-between items-center shrink-0">
-          <h1 className="text-2xl font-bold text-blue-700">Patient Dashboard</h1>
+      <div className="flex-1 flex flex-col transition-all duration-300 overflow-hidden min-h-screen text-left w-full">
+        <header className="h-20 bg-white shadow-sm border-b border-gray-100 px-4 md:px-8 flex justify-between items-center shrink-0 z-40">
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              className="md:hidden p-2 rounded-lg border border-gray-200 text-slate-600"
+              onClick={() => setIsCollapsed(false)}
+              aria-label="Open sidebar"
+            >
+              <FaBars size={16} />
+            </button>
+            <h1 className="text-xl md:text-2xl font-bold text-blue-700">Patient Dashboard</h1>
+          </div>
           
           <div 
-            className="flex items-center space-x-3 pr-4 cursor-pointer group"
+            className="flex items-center space-x-3 border-l pl-6 border-gray-100 text-right cursor-pointer"
             onClick={() => navigate("/profile")}
           >
             <img 
               src={`https://ui-avatars.com/api/?name=${userName}&background=random&color=fff`} 
               alt="profile" 
-              className="w-10 h-10 rounded-full border-2 border-blue-100 object-cover group-hover:border-blue-500 transition-all" 
+              className="w-10 h-10 rounded-full border-2 border-blue-100 object-cover" 
             />
-            <div className="text-right">
-              <p className="text-sm font-bold text-gray-800 leading-none group-hover:text-blue-600 transition-colors">{userName}</p>
+            <div className="hidden sm:block">
+              <p className="text-sm font-bold text-gray-800 leading-none">{userName}</p>
               <p className="text-[11px] text-gray-400 mt-1 uppercase font-semibold">Verified Patient</p>
             </div>
           </div>
         </header>
 
-        <main className="p-8 space-y-8 overflow-y-auto">
+        <main className="p-4 md:p-8 space-y-8 overflow-y-auto">
           <div className="animate-fadeIn space-y-8">
             <div>
               <h2 className="text-2xl font-black text-slate-800">General Overview</h2>

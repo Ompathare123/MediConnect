@@ -32,6 +32,7 @@ const appointmentSchema = new mongoose.Schema(
       type: String,
       required: true
     },
+    gender: { type: String },
     age: { type: String },
     bloodGroup: { type: String },
     symptoms: { type: String },
@@ -41,14 +42,21 @@ const appointmentSchema = new mongoose.Schema(
     },
     // --- PRESCRIPTION STORAGE ---
     prescription: {
+      chiefComplaints: String,
+      diagnosis: String,
       medicines: [
         {
           name: String,
           dosage: String,
+          frequency: String,
+          duration: String,
           timing: String
         }
       ],
+      tests: String,
       advice: String,
+      followUp: String,
+      allergies: String,
       createdAt: { type: Date, default: Date.now }
     },
     status: {

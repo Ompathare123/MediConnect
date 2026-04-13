@@ -1,11 +1,38 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import toast from 'react-hot-toast';
 import {
   FaBars, FaTachometerAlt, FaCalendarPlus, FaCalendarCheck,
-  FaFilePrescription, FaUser, FaSignOutAlt, FaBell,
+  FaFilePrescription, FaUser, FaSignOutAlt,
   FaHospitalUser, FaChevronLeft, FaPaperclip, FaInfoCircle
 } from "react-icons/fa";
+
+const getTodayLocalDateString = () => {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, "0");
+  const day = String(today.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+const getWeekdayKey = (dateStr) => {
+  const date = new Date(dateStr);
+  if (Number.isNaN(date.getTime())) return null;
+  const dayNames = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
+  return dayNames[date.getDay()];
+};
+
+const normalizeAvailabilityValue = (value, fallback = true) => {
+  if (value === undefined || value === null) return fallback;
+  if (typeof value === "boolean") return value;
+  if (typeof value === "number") return value === 1;
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+    return normalized === "true" || normalized === "1" || normalized === "yes" || normalized === "available";
+  }
+  return Boolean(value);
+};
 
 const BookAppointmentPage = () => {
   const navigate = useNavigate();
@@ -23,6 +50,7 @@ const BookAppointmentPage = () => {
   const [availableSlots, setAvailableSlots] = useState([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [selectedSlotFee, setSelectedSlotFee] = useState(0);
+  const minBookingDate = getTodayLocalDateString();
 
   const userName = localStorage.getItem("userName") || "Patient";
 
@@ -41,10 +69,34 @@ const BookAppointmentPage = () => {
   
   const [selectedDoctor, setSelectedDoctor] = useState(null);
 
+  const getDoctorDayAvailability = () => {
+    if (!selectedDoctor) return { available: false, text: "Not Available" };
+
+    const targetDate = formData.appointmentDate || getTodayLocalDateString();
+    const weekdayKey = getWeekdayKey(targetDate);
+    const weekConfig = selectedDoctor.weeklyAvailability || {};
+
+    const rawDayValue = weekdayKey ? weekConfig[weekdayKey] : undefined;
+    const isAvailable = normalizeAvailabilityValue(rawDayValue, true);
+    const isToday = targetDate === getTodayLocalDateString();
+
+    if (isAvailable) {
+      return { available: true, text: isToday ? "Available Today" : "Available On Selected Day" };
+    }
+
+    return { available: false, text: isToday ? "Not Available Today" : "Not Available On Selected Day" };
+  };
+
   // Persistence effect for sidebar
   useEffect(() => {
     localStorage.setItem("sidebarCollapsed", JSON.stringify(isCollapsed));
   }, [isCollapsed]);
+
+  useEffect(() => {
+    if (window.innerWidth < 768) {
+      setIsCollapsed(true);
+    }
+  }, []);
 
   const menuItems = [
     { icon: FaTachometerAlt, label: "Dashboard", path: "/patient-dashboard" },
@@ -66,8 +118,10 @@ const BookAppointmentPage = () => {
       }
       setLoadingDoctors(true);
       try {
+        const token = localStorage.getItem("token");
         const response = await axios.get(`http://localhost:5000/api/doctors/all`, {
-          params: { department: formData.department }
+          params: { department: formData.department },
+          headers: token ? { Authorization: `Bearer ${token}` } : {}
         });
         setDbDoctors(response.data);
       } catch (error) {
@@ -124,6 +178,12 @@ const BookAppointmentPage = () => {
     const { name, value, files } = e.target;
     if (name === "medicalReports") {
       setFormData(prev => ({ ...prev, medicalReports: files[0] }));
+    } else if (name === "appointmentDate") {
+      if (value && value < minBookingDate) {
+        toast.error("You cannot book an appointment for a past date.");
+        return;
+      }
+      setFormData(prev => ({ ...prev, appointmentDate: value }));
     } else if (name === "timeSlot") {
       const slotObj = availableSlots.find(s => s.time === value);
       setSelectedSlotFee(slotObj ? slotObj.fee : 0);
@@ -136,7 +196,12 @@ const BookAppointmentPage = () => {
   const handleBookAppointment = async (e) => {
     e.preventDefault();
     if (!formData.doctorId || formData.doctorId === "null") {
-        return alert("Please select a valid doctor.");
+        toast.error("Please select a valid doctor.");
+        return;
+    }
+    if (!formData.appointmentDate || formData.appointmentDate < minBookingDate) {
+      toast.error("Past date booking is not allowed.");
+      return;
     }
     
     try {
@@ -169,7 +234,7 @@ const BookAppointmentPage = () => {
       }
     } catch (error) { 
       const errorMsg = error.response?.data?.message || "Server error while booking.";
-      alert(errorMsg); 
+      toast.error(errorMsg); 
     }
   };
 
@@ -179,9 +244,9 @@ const BookAppointmentPage = () => {
   };
 
   return (
-    <div className="flex h-screen bg-[#F8FAFC] overflow-hidden text-left">
+    <div className="flex min-h-screen bg-gradient-to-b from-[#eaf2ff] via-[#f4f8ff] to-[#edf4ff] overflow-x-hidden text-left relative">
       {/* Sidebar - Controlled strictly by isCollapsed state */}
-      <div className={`${isCollapsed ? "w-20" : "w-64"} bg-gradient-to-b from-blue-600 to-blue-800 text-white min-h-screen shadow-2xl transition-all duration-300 ease-in-out flex flex-col z-50 sticky top-0 h-screen`}>
+      <div className={`${isCollapsed ? "-translate-x-full md:translate-x-0 md:w-20" : "translate-x-0 w-64"} fixed md:static inset-y-0 left-0 bg-gradient-to-b from-blue-600 to-blue-800 text-white shadow-2xl transition-all duration-300 ease-in-out flex flex-col z-50`}>
         
         <div className={`h-20 px-6 border-b border-blue-50 flex items-center ${isCollapsed ? "justify-center" : "justify-between"} shrink-0`}>
           {!isCollapsed && (
@@ -233,14 +298,29 @@ const BookAppointmentPage = () => {
         </div>
       </div>
 
-      <div className="flex-1 flex flex-col h-full overflow-hidden">
-        <header className="h-20 bg-white shadow-sm border-b border-gray-100 px-8 flex justify-between items-center shrink-0 z-40">
-          <h1 className="text-2xl font-bold text-blue-700">Book Appointment</h1>
-          <div className="flex items-center space-x-6">
-            <div className="relative cursor-pointer hover:bg-gray-50 p-2 rounded-full transition">
-              <FaBell className="text-gray-600 text-xl" />
-              <span className="absolute top-1 right-1 bg-red-500 text-white text-[10px] w-4 h-4 flex items-center justify-center rounded-full border-2 border-white">3</span>
-            </div>
+      {!isCollapsed && (
+        <button
+          type="button"
+          aria-label="Close sidebar"
+          onClick={() => setIsCollapsed(true)}
+          className="fixed inset-0 bg-slate-900/30 z-40 md:hidden"
+        />
+      )}
+
+      <div className="flex-1 flex flex-col min-h-screen overflow-hidden w-full">
+        <header className="h-20 bg-white shadow-sm border-b border-gray-100 px-4 md:px-8 flex justify-between items-center shrink-0 z-40">
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              className="md:hidden p-2 rounded-lg border border-gray-200 text-slate-600"
+              onClick={() => setIsCollapsed(false)}
+              aria-label="Open sidebar"
+            >
+              <FaBars size={16} />
+            </button>
+            <h1 className="text-xl md:text-2xl font-bold text-blue-700">Book Appointment</h1>
+          </div>
+          <div className="flex items-center space-x-3">
             <div 
                className="flex items-center space-x-3 border-l pl-6 border-gray-100 text-right cursor-pointer"
                onClick={() => navigate("/profile")}
@@ -254,8 +334,8 @@ const BookAppointmentPage = () => {
           </div>
         </header>
 
-        <div className="flex-1 overflow-y-auto bg-[#F8FAFC]">
-          <main className="p-8 max-w-7xl mx-auto w-full relative">
+        <div className="flex-1 overflow-y-auto bg-gradient-to-b from-[#edf4ff] via-[#f5f9ff] to-[#edf4ff]">
+          <main className="p-4 md:p-8 max-w-7xl mx-auto w-full relative">
             <div className="mb-8 text-left">
               <h2 className="text-3xl font-black text-slate-800 tracking-tight">Book Appointment</h2>
               <p className="text-slate-500 font-medium">Schedule your consultation with a specialist</p>
@@ -314,7 +394,7 @@ const BookAppointmentPage = () => {
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
                           <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Date *</label>
-                          <input type="date" name="appointmentDate" value={formData.appointmentDate} onChange={handleInputChange} className="w-full px-4 py-3 border border-gray-200 rounded-xl font-medium focus:ring-2 focus:ring-blue-500 outline-none transition-all" required />
+                          <input type="date" name="appointmentDate" value={formData.appointmentDate} min={minBookingDate} onChange={handleInputChange} className="w-full px-4 py-3 border border-gray-200 rounded-xl font-medium focus:ring-2 focus:ring-blue-500 outline-none transition-all" required />
                         </div>
                         <div className="space-y-2">
                           <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Time *</label>
@@ -393,9 +473,15 @@ const BookAppointmentPage = () => {
                         </div>
                         <p className="text-xs text-gray-600 leading-relaxed italic">"{selectedDoctor.bio || 'Specialist in the field.'}"</p>
                       </div>
-                      <div className="bg-green-50 text-green-700 py-2 rounded-lg text-xs font-bold uppercase tracking-widest flex items-center justify-center font-black">
-                        <span className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></span>Available Today
-                      </div>
+                      {(() => {
+                        const availability = getDoctorDayAvailability();
+                        return (
+                          <div className={`${availability.available ? "bg-green-50 text-green-700" : "bg-red-50 text-red-600"} py-2 rounded-lg text-xs font-bold uppercase tracking-widest flex items-center justify-center font-black`}>
+                            <span className={`w-2 h-2 ${availability.available ? "bg-green-500" : "bg-red-500"} rounded-full mr-2 ${availability.available ? "animate-pulse" : ""}`}></span>
+                            {availability.text}
+                          </div>
+                        );
+                      })()}
                     </>
                   ) : (
                     <div className="py-12 text-center"><FaHospitalUser className="mx-auto text-blue-100 text-6xl mb-4" /><p className="text-gray-400 font-bold text-[11px] uppercase tracking-widest">Select doctor for details</p></div>

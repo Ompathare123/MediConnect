@@ -11,8 +11,27 @@ const appointmentRoutes = require("./routes/appointmentRoutes");
 
 const app = express();
 
-app.use(cors());
+const allowedOrigins = String(process.env.FRONTEND_URL || "")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+const corsOptions = {
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.length === 0 || allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    return callback(new Error("CORS not allowed for this origin"));
+  },
+  credentials: true
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
+
+app.get("/api/health", (req, res) => {
+  res.status(200).json({ ok: true, service: "mediconnect-server" });
+});
 
 // Serve the 'uploads' folder as a static directory
 // Accessible via http://localhost:5000/uploads/filename

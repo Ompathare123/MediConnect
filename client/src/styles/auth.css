@@ -14,7 +14,7 @@
 .overlay {
   height: 100%;
   width: 100%;
-  background: rgba(0, 0, 0, 0.4); /* Slightly lighter overlay */
+  background: linear-gradient(140deg, rgba(8, 64, 122, 0.42), rgba(10, 126, 164, 0.36));
   display: flex;
   justify-content: center;
   align-items: center;
@@ -26,10 +26,10 @@
   max-height: 90vh; /* Prevents card from going off-screen */
   padding: 40px;
   border-radius: 25px;
-  background: rgba(225, 240, 255, 0.8); /* Light blue tinted glass */
+  background: rgba(235, 245, 255, 0.85);
   text-align: center;
-  border: 4px solid #82c3f8; /* Softer blue border */
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  border: 3px solid #9dc8ff;
+  box-shadow: 0 10px 34px rgba(4, 44, 97, 0.24);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   overflow-y: auto; /* Makes the register form scrollable if needed */
@@ -52,11 +52,107 @@
   font-weight: 700;
 }
 
+.login-brand-wrap {
+  margin-bottom: 6px;
+}
+
+.login-brand-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.brand-mc {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 1px;
+  font-size: 40px;
+  font-weight: 800;
+  line-height: 0.9;
+  letter-spacing: -2px;
+  background: linear-gradient(135deg, #95c8df 0%, #4ec3c5 55%, #2ca9bb 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.brand-name-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  line-height: 0.92;
+  margin-right: 2px;
+}
+
+.brand-name-stack span {
+  font-size: 16px;
+  font-weight: 600;
+  color: #183147;
+}
+
+.brand-heart {
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.brand-heart svg {
+  width: 100%;
+  height: 100%;
+  fill: #57c5cc;
+}
+
+.login-brand-subtitle {
+  font-size: 12px;
+  color: #3f5569;
+  font-weight: 500;
+  margin: 0;
+}
+
+.login-card-with-brand h2 {
+  margin-top: 10px;
+  margin-bottom: 24px;
+  color: #123f70;
+  font-size: 44px;
+  line-height: 0.95;
+}
+
 /* Form Styling */
 .login-card form {
   display: flex;
   flex-direction: column;
   gap: 15px;
+}
+
+.input-group {
+  position: relative;
+}
+
+.input-icon {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #6b9dc3;
+  font-size: 14px;
+  width: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.login-card .input-group input {
+  padding: 14px 14px 14px 46px;
+}
+
+.input-group input::placeholder {
+  color: #8ea0b4;
+  opacity: 1;
 }
 
 /* Inputs, Select, and Textarea */
@@ -137,4 +233,211 @@
 
 .register-text a:hover {
   text-decoration: underline;
+}
+
+/* Reference Login Style */
+.login-reference .overlay {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, rgba(184, 223, 240, 0.2) 0%, rgba(214, 239, 248, 0.16) 100%);
+}
+
+.medical-overlay-icons {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  opacity: 0.55;
+}
+
+.login-reference .login-ref-card {
+  width: 100%;
+  max-width: 460px;
+  padding: 40px 44px 36px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(158, 211, 228, 0.8);
+  box-shadow: 0 8px 40px rgba(43, 179, 192, 0.13), 0 2px 16px rgba(0, 0, 0, 0.07);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  position: relative;
+  z-index: 2;
+}
+
+.login-reference .login-brand-row {
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.login-reference .brand-mc {
+  font-size: 34px;
+  line-height: 1;
+  letter-spacing: -1px;
+}
+
+.login-reference .brand-name-stack span {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1a6a78;
+}
+
+.login-reference .brand-heart {
+  width: 34px;
+  height: 34px;
+}
+
+.login-reference .brand-heart svg {
+  fill: none;
+  stroke: #2bb3c0;
+  stroke-width: 1.6;
+}
+
+.login-reference .login-brand-subtitle {
+  font-size: 13px;
+  letter-spacing: 0.2px;
+  color: #5a8a95;
+}
+
+.login-reference .login-card-with-brand h2 {
+  margin-top: 10px;
+  margin-bottom: 28px;
+  color: #1a4a5a;
+  font-size: 56px;
+}
+
+.register-reference .login-card-with-brand h2 {
+  font-size: 32px;
+  line-height: 1.05;
+}
+
+.login-reference .input-group {
+  margin-bottom: 8px;
+}
+
+.login-reference .input-icon {
+  left: 14px;
+  color: #2bb3c0;
+  font-size: 16px;
+}
+
+.login-reference .login-card .input-group input {
+  border: none;
+  border-bottom: 2px solid #2bb3c0;
+  border-radius: 0;
+  background: transparent;
+  color: #1a4a5a;
+  font-size: 15px;
+  padding: 10px 36px 8px 34px;
+  box-shadow: none;
+}
+
+.login-reference .input-group input::placeholder {
+  color: #5f8795;
+}
+
+.login-reference .input-group input:focus {
+  border-bottom-color: #1a8fa0;
+  box-shadow: none;
+}
+
+.login-reference .login-card .input-group select,
+.login-reference .login-card .input-group textarea {
+  border: none;
+  border-bottom: 2px solid #2bb3c0;
+  border-radius: 0;
+  background: transparent;
+  color: #1a4a5a;
+  font-size: 15px;
+  padding: 10px 8px 8px 34px;
+  box-shadow: none;
+}
+
+.login-reference .login-card .input-group select:focus,
+.login-reference .login-card .input-group textarea:focus {
+  border-bottom-color: #1a8fa0;
+  box-shadow: none;
+}
+
+.login-reference .login-card .input-group textarea {
+  height: 72px;
+  resize: vertical;
+}
+
+.login-reference .toggle-password {
+  position: absolute;
+  right: 4px;
+  top: 48%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: #2bb3c0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  margin: 0;
+  width: auto;
+}
+
+.login-reference .forgot-row {
+  text-align: right;
+  margin-top: 2px;
+  margin-bottom: 18px;
+}
+
+.login-reference .forgot-link {
+  color: #3a7a8a;
+  font-size: 13px;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.login-reference .login-card button[type="submit"] {
+  width: 100%;
+  padding: 15px;
+  border-radius: 10px;
+  border: none;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  background: linear-gradient(90deg, #1a8a9a 0%, #2bb3c0 100%);
+  margin-top: 0;
+  margin-bottom: 20px;
+}
+
+.login-reference .login-card button[type="submit"]:hover {
+  transform: none;
+  box-shadow: none;
+  opacity: 0.94;
+}
+
+.login-reference .register-text {
+  margin-top: 0;
+  color: #5a7a85;
+  font-size: 14px;
+}
+
+.login-reference .register-text a {
+  color: #2bb3c0;
+}
+
+@media (max-width: 600px) {
+  .login-reference .login-ref-card {
+    max-width: 92vw;
+    padding: 30px 24px;
+  }
+
+  .login-reference .login-card-with-brand h2 {
+    font-size: 44px;
+  }
+
+  .login-reference .brand-mc {
+    font-size: 30px;
+  }
+
+  .login-reference .brand-name-stack span {
+    font-size: 16px;
+  }
 }

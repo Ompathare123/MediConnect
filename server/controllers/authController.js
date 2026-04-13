@@ -45,6 +45,10 @@ exports.loginUser = async (req, res) => {
       return res.status(400).json({ message: "Invalid credentials" });
     }
 
+    if (user.isActive === false) {
+      return res.status(403).json({ message: "Account is deactivated. Please contact admin." });
+    }
+
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(400).json({ message: "Invalid credentials" });
@@ -77,5 +81,23 @@ exports.loginUser = async (req, res) => {
   } catch (error) {
     console.error("Login Error:", error);
     res.status(500).json({ message: "Server Error" });
+  }
+};
+
+// GET ALL PATIENTS (ADMIN ONLY)
+exports.getPatients = async (req, res) => {
+  try {
+    if (req.user.role !== "admin") {
+      return res.status(403).json({ message: "Unauthorized" });
+    }
+
+    const patients = await User.find({ role: "patient" })
+      .select("name email phone gender address createdAt")
+      .sort({ createdAt: -1 });
+
+    res.json(patients);
+  } catch (error) {
+    console.error("Get Patients Error:", error);
+    res.status(500).json({ message: "Server Error fetching patients" });
   }
 };

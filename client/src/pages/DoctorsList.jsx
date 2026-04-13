@@ -25,7 +25,10 @@ const DoctorsList = () => {
   useEffect(() => {
     const fetchDoctors = async () => {
       try {
-        const res = await axios.get("http://localhost:5000/api/doctors/all");
+        const token = localStorage.getItem("token");
+        const res = await axios.get("http://localhost:5000/api/doctors/all", {
+          headers: token ? { Authorization: `Bearer ${token}` } : {}
+        });
         setDoctors(res.data);
       } catch (error) {
         console.error("Error fetching doctors:", error);
@@ -42,9 +45,9 @@ const DoctorsList = () => {
   };
 
   return (
-    <div className="flex h-screen bg-[#F8FAFC] overflow-hidden text-left">
+    <div className="flex min-h-screen bg-gradient-to-b from-[#eaf2ff] via-[#f4f8ff] to-[#edf4ff] overflow-x-hidden text-left relative">
       {/* Sidebar */}
-      <div className={`${isCollapsed ? "w-20" : "w-64"} bg-gradient-to-b from-blue-600 to-blue-800 text-white min-h-screen shadow-2xl transition-all duration-300 flex flex-col z-50`}>
+      <div className={`${isCollapsed ? "-translate-x-full md:translate-x-0 md:w-20" : "translate-x-0 w-64"} fixed md:static inset-y-0 left-0 bg-gradient-to-b from-blue-600 to-blue-800 text-white shadow-2xl transition-all duration-300 flex flex-col z-50`}>
         <div className="h-20 px-6 border-b border-blue-50 flex items-center justify-between shrink-0">
           {!isCollapsed && <h2 className="text-xl font-bold flex items-center space-x-3 italic"><span>MediConnect</span></h2>}
           <button onClick={() => setIsCollapsed(!isCollapsed)} className="p-2 hover:bg-white/10 rounded-lg transition-colors">
@@ -72,9 +75,28 @@ const DoctorsList = () => {
         </div>
       </div>
 
-      <div className="flex-1 flex flex-col h-full overflow-hidden">
-        <header className="h-20 bg-white shadow-sm border-b border-gray-100 px-8 flex justify-between items-center shrink-0">
-          <h1 className="text-2xl font-bold text-blue-700">Our Doctors</h1>
+      {!isCollapsed && (
+        <button
+          type="button"
+          aria-label="Close sidebar"
+          onClick={() => setIsCollapsed(true)}
+          className="fixed inset-0 bg-slate-900/30 z-40 md:hidden"
+        />
+      )}
+
+      <div className="flex-1 flex flex-col min-h-screen overflow-hidden w-full">
+        <header className="h-20 bg-white shadow-sm border-b border-gray-100 px-4 md:px-8 flex justify-between items-center shrink-0">
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              className="md:hidden p-2 rounded-lg border border-gray-200 text-slate-600"
+              onClick={() => setIsCollapsed(false)}
+              aria-label="Open sidebar"
+            >
+              <FaBars size={16} />
+            </button>
+            <h1 className="text-xl md:text-2xl font-bold text-blue-700">Our Doctors</h1>
+          </div>
           
           <div className="flex items-center space-x-6">
             {/* Notification Icon */}
@@ -93,7 +115,7 @@ const DoctorsList = () => {
           </div>
         </header>
 
-        <div className="flex-1 overflow-y-auto bg-[#F8FAFC] p-8">
+        <div className="flex-1 overflow-y-auto bg-gradient-to-b from-[#edf4ff] via-[#f5f9ff] to-[#edf4ff] p-4 md:p-8">
           <div className="max-w-7xl mx-auto">
             <div className="mb-8">
               <h2 className="text-2xl font-black text-slate-800 tracking-tight">Available Specialists</h2>

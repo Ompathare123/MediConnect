@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
+import toast from "react-hot-toast";
+import { toBackendUrl } from "../api/runtime";
 import {
   FaBars,
   FaTachometerAlt,
@@ -15,7 +17,6 @@ import {
   FaTimes,
   FaInfoCircle,
   FaSearch,
-  FaBell,
   FaHospitalUser,
   FaExclamationTriangle,
   FaFileMedical
@@ -42,6 +43,12 @@ const MyAppointments = () => {
   useEffect(() => {
     localStorage.setItem("sidebarCollapsed", JSON.stringify(isCollapsed));
   }, [isCollapsed]);
+
+  useEffect(() => {
+    if (window.innerWidth < 768) {
+      setIsCollapsed(true);
+    }
+  }, []);
 
   const menuItems = [
     { icon: FaTachometerAlt, label: "Dashboard", id: "dashboard", path: "/patient-dashboard" },
@@ -84,10 +91,10 @@ const MyAppointments = () => {
       await axios.delete(`http://localhost:5000/api/appointments/${id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      alert("Appointment cancelled successfully.");
+      toast.success("Appointment cancelled successfully.");
       fetchAppointments();
     } catch (error) {
-      alert("Failed to cancel appointment.");
+      toast.error("Failed to cancel appointment.");
     }
   };
 
@@ -109,9 +116,9 @@ const MyAppointments = () => {
   });
 
   return (
-    <div className="flex h-screen bg-[#F8FAFC] overflow-hidden text-left relative">
+    <div className="flex min-h-screen bg-gradient-to-b from-[#eaf2ff] via-[#f4f8ff] to-[#edf4ff] overflow-x-hidden text-left relative">
       {/* Sidebar - Transition and Width handled by state */}
-      <div className={`${isCollapsed ? "w-20" : "w-64"} bg-gradient-to-b from-blue-600 to-blue-800 text-white min-h-screen shadow-2xl transition-all duration-300 ease-in-out flex flex-col z-50 sticky top-0 h-screen`}>
+      <div className={`${isCollapsed ? "-translate-x-full md:translate-x-0 md:w-20" : "translate-x-0 w-64"} fixed md:static inset-y-0 left-0 bg-gradient-to-b from-blue-600 to-blue-800 text-white shadow-2xl transition-all duration-300 ease-in-out flex flex-col z-50`}>
         
         <div className={`h-20 px-6 border-b border-blue-50 flex items-center ${isCollapsed ? "justify-center" : "justify-between"} shrink-0`}>
           {!isCollapsed && (
@@ -150,11 +157,12 @@ const MyAppointments = () => {
           ))}
         </nav>
 
-        <div className="px-3 pb-8">
+        <div className="px-3 pb-6 border-t border-blue-500/50 pt-4">
           <button 
             type="button"
             onClick={handleLogout}
             className={`w-full flex items-center ${isCollapsed ? "justify-center" : "space-x-3"} px-4 py-3 rounded-xl hover:bg-red-500/20 text-red-100 transition-all`}
+            title={isCollapsed ? "Logout" : ""}
           >
             <div className="flex-shrink-0"><FaSignOutAlt size={20} /></div>
             {!isCollapsed && <span className="whitespace-nowrap font-medium">Logout</span>}
@@ -162,21 +170,36 @@ const MyAppointments = () => {
         </div>
       </div>
 
+      {!isCollapsed && (
+        <button
+          type="button"
+          aria-label="Close sidebar"
+          onClick={() => setIsCollapsed(true)}
+          className="fixed inset-0 bg-slate-900/30 z-40 md:hidden"
+        />
+      )}
+
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col h-full overflow-hidden">
-        <header className="h-20 bg-white shadow-sm border-b border-gray-100 px-8 flex justify-between items-center shrink-0">
-          <h1 className="text-2xl font-bold text-blue-700">My Appointments</h1>
-          <div className="flex items-center space-x-6">
-            <div className="relative cursor-pointer hover:bg-gray-50 p-2 rounded-full transition">
-              <FaBell className="text-gray-600 text-xl" />
-              <span className="absolute top-1 right-1 bg-red-500 text-white text-[10px] w-4 h-4 flex items-center justify-center rounded-full border-2 border-white">3</span>
-            </div>
+      <div className="flex-1 flex flex-col min-h-screen overflow-hidden w-full">
+        <header className="h-20 bg-white shadow-sm border-b border-gray-100 px-4 md:px-8 flex justify-between items-center shrink-0">
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              className="md:hidden p-2 rounded-lg border border-gray-200 text-slate-600"
+              onClick={() => setIsCollapsed(false)}
+              aria-label="Open sidebar"
+            >
+              <FaBars size={16} />
+            </button>
+            <h1 className="text-xl md:text-2xl font-bold text-blue-700">My Appointments</h1>
+          </div>
+          <div className="flex items-center space-x-3">
             <div 
                className="flex items-center space-x-3 border-l pl-6 border-gray-100 cursor-pointer"
                onClick={() => navigate("/profile")}
             >
               <img src={`https://ui-avatars.com/api/?name=${userName}&background=random&color=fff`} alt="profile" className="w-10 h-10 rounded-full border-2 border-blue-100 object-cover" />
-              <div className="text-left">
+              <div className="text-left hidden sm:block">
                 <p className="text-sm font-bold text-gray-800 leading-none">{userName}</p>
                 <p className="text-[11px] text-gray-400 mt-1 uppercase font-semibold">Verified Patient</p>
               </div>
@@ -184,7 +207,7 @@ const MyAppointments = () => {
           </div>
         </header>
 
-        <div className="flex-1 overflow-y-auto bg-[#F8FAFC] p-8">
+        <div className="flex-1 overflow-y-auto bg-gradient-to-b from-[#edf4ff] via-[#f5f9ff] to-[#edf4ff] p-4 md:p-8">
           <div className="max-w-6xl mx-auto">
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
               <div>
@@ -346,7 +369,7 @@ const MyAppointments = () => {
 
               {selectedApt.medicalReport && (
                 <div className="pt-2"><p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Attached Documents</p>
-                  <a href={`http://localhost:5000/uploads/${selectedApt.medicalReport}`} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between bg-blue-50 border border-blue-100 p-4 rounded-2xl group hover:bg-blue-600 transition-all duration-300">
+                  <a href={toBackendUrl(`/uploads/${selectedApt.medicalReport}`)} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between bg-blue-50 border border-blue-100 p-4 rounded-2xl group hover:bg-blue-600 transition-all duration-300">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-blue-600 group-hover:text-blue-600 shadow-sm">
                         <FaFileMedical size={18} />
