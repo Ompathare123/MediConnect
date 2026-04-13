@@ -184,7 +184,7 @@ function Login() {
               </button>
             </div>
             <div className="forgot-row">
-              <a href="#" className="forgot-link">Forgot Password?</a>
+              <button type="button" className="forgot-link forgot-link-button">Forgot Password?</button>
             </div>
             <button type="submit">Sign In Securely</button>
           </form>

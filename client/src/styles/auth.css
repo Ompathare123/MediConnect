@@ -394,6 +394,13 @@
   font-weight: 500;
 }
 
+.login-reference .forgot-link-button {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+
 .login-reference .login-card button[type="submit"] {
   width: 100%;
   padding: 15px;
