@@ -33,6 +33,10 @@ app.get("/api/health", (req, res) => {
   res.status(200).json({ ok: true, service: "mediconnect-server" });
 });
 
+app.get("/health", (req, res) => {
+  res.status(200).json({ ok: true, service: "mediconnect-server" });
+});
+
 // Serve the 'uploads' folder as a static directory
 // Accessible via http://localhost:5000/uploads/filename
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
