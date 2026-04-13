@@ -4,7 +4,7 @@ import axios from 'axios';
 import App from './App';
 import './index.css';
 
-const API_BASE_URL = (process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000').replace(/\/+$/, '');
+const API_BASE_URL = (process.env.REACT_APP_API_BASE_URL || 'https://mediconnect-2imn.onrender.com').replace(/\/+$/, '');
 
 const replaceLocalBackendUrl = (url) => {
   if (typeof url !== 'string') return url;
