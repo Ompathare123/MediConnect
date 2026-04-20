@@ -142,7 +142,22 @@ const DoctorsList = () => {
                       <div className="flex justify-between text-sm"><span className="text-gray-400">Education:</span><span className="font-bold text-slate-700">{doc.education}</span></div>
                     </div>
                     <button 
-                      onClick={() => navigate("/book-appointment")} 
+                      onClick={() => {
+                        const params = new URLSearchParams({
+                          doctorId: doc._id,
+                          department: doc.department || ""
+                        });
+
+                        navigate(`/book-appointment?${params.toString()}`, {
+                          state: {
+                            selectedDoctor: {
+                              doctorId: doc._id,
+                              department: doc.department || "",
+                              doctorName: doc.name || ""
+                            }
+                          }
+                        });
+                      }} 
                       className="w-full py-3 bg-slate-800 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-blue-600 transition-colors"
                     >
                       Book Appointment

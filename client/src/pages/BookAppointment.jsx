@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import {
@@ -36,6 +36,7 @@ const normalizeAvailabilityValue = (value, fallback = true) => {
 
 const BookAppointmentPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const fileInputRef = useRef(null); 
   
   // --- SYNC SIDEBAR STATE WITH LOCALSTORAGE ---
@@ -50,6 +51,7 @@ const BookAppointmentPage = () => {
   const [availableSlots, setAvailableSlots] = useState([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [selectedSlotFee, setSelectedSlotFee] = useState(0);
+  const [pendingDoctorId, setPendingDoctorId] = useState('');
   const minBookingDate = getTodayLocalDateString();
 
   const userName = localStorage.getItem("userName") || "Patient";
@@ -68,6 +70,29 @@ const BookAppointmentPage = () => {
   });
   
   const [selectedDoctor, setSelectedDoctor] = useState(null);
+
+  useEffect(() => {
+    const queryParams = new URLSearchParams(location.search);
+    const selectedDoctorState = location.state?.selectedDoctor || {};
+
+    const prefillDepartment =
+      selectedDoctorState.department || queryParams.get("department") || "";
+    const prefillDoctorId =
+      selectedDoctorState.doctorId || queryParams.get("doctorId") || "";
+
+    if (!prefillDepartment && !prefillDoctorId) return;
+
+    if (prefillDepartment) {
+      setFormData((prev) => ({
+        ...prev,
+        department: prefillDepartment
+      }));
+    }
+
+    if (prefillDoctorId) {
+      setPendingDoctorId(prefillDoctorId);
+    }
+  }, [location.search, location.state]);
 
   const getDoctorDayAvailability = () => {
     if (!selectedDoctor) return { available: false, text: "Not Available" };
@@ -173,6 +198,19 @@ const BookAppointmentPage = () => {
       setSelectedDoctor(null); 
     }
   }, [formData.doctorId, dbDoctors]);
+
+  useEffect(() => {
+    if (!pendingDoctorId || dbDoctors.length === 0) return;
+
+    const matchedDoctor = dbDoctors.find((doctor) => doctor._id === pendingDoctorId);
+    if (matchedDoctor) {
+      setFormData((prev) => ({
+        ...prev,
+        doctorId: matchedDoctor._id
+      }));
+      setPendingDoctorId('');
+    }
+  }, [pendingDoctorId, dbDoctors]);
 
   const handleInputChange = (e) => {
     const { name, value, files } = e.target;
