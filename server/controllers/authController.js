@@ -2,6 +2,7 @@ const User = require("../models/User");
 const Doctor = require("../models/Doctor"); // Imported Doctor Model
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const { sendEmail } = require("../utils/emailService");
 
 // REGISTER PATIENT
 exports.registerUser = async (req, res) => {
@@ -27,6 +28,13 @@ exports.registerUser = async (req, res) => {
     });
 
     await user.save();
+
+    await sendEmail({
+      to: user.email,
+      subject: "Welcome to MediConnect",
+      text: `Hi ${user.name}, your MediConnect account has been created successfully. You can now book appointments and view your prescriptions online.`
+    });
+
     res.status(201).json({ success: true, message: "Registered successfully" });
 
   } catch (error) {

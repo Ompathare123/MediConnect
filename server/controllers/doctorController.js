@@ -1,6 +1,7 @@
 const Doctor = require("../models/Doctor");
 const User = require("../models/User");
 const bcrypt = require("bcryptjs");
+const { sendEmail } = require("../utils/emailService");
 
 const ensureAdmin = (req, res) => {
   if (!req.user || req.user.role !== "admin") {
@@ -55,6 +56,12 @@ exports.addDoctor = async (req, res) => {
       education,
     });
     await newDoctor.save();
+
+    await sendEmail({
+      to: normalizedEmail,
+      subject: "Your doctor account is ready",
+      text: `Hello Dr. ${firstName} ${lastName}, your MediConnect doctor account has been created. Login email: ${normalizedEmail}. Temporary password: ${password}. Please sign in and change your password immediately.`
+    });
 
     res.status(201).json({ success: true, message: "Doctor added successfully!" });
   } catch (error) {

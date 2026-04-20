@@ -2,6 +2,7 @@ const Appointment = require("../models/Appointment");
 const Doctor = require("../models/Doctor");
 const Schedule = require("../models/Schedule");
 const User = require("../models/User");
+const { sendEmail } = require("../utils/emailService");
 
 const parseDateOnly = (dateStr) => {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(dateStr || "").trim());
@@ -87,6 +88,25 @@ exports.createAppointment = async (req, res) => {
     });
 
     await appointment.save();
+
+    const [patientUser, doctorProfile] = await Promise.all([
+      User.findById(appointment.user).select("name email"),
+      appointment.doctorId ? Doctor.findById(appointment.doctorId).select("name email") : null
+    ]);
+
+    await Promise.allSettled([
+      sendEmail({
+        to: patientUser?.email,
+        subject: "Appointment booked successfully",
+        text: `Hi ${patientUser?.name || appointment.patientName}, your appointment with Dr. ${appointment.doctorName} is confirmed for ${appointment.appointmentDate} at ${appointment.timeSlot}.`
+      }),
+      sendEmail({
+        to: doctorProfile?.email,
+        subject: "New appointment booked",
+        text: `A new appointment has been booked by ${appointment.patientName} for ${appointment.appointmentDate} at ${appointment.timeSlot}.`
+      })
+    ]);
+
     res.status(201).json({ success: true, message: "Appointment booked successfully", appointment });
   } catch (error) {
     res.status(500).json({ message: "Server error during booking", error: error.message });
@@ -236,6 +256,13 @@ exports.addPrescription = async (req, res) => {
     appointment.status = "Completed";
     await appointment.save();
 
+    const patientUser = await User.findById(appointment.user).select("name email");
+    await sendEmail({
+      to: patientUser?.email,
+      subject: "Prescription is ready",
+      text: `Hi ${patientUser?.name || appointment.patientName}, your prescription for appointment on ${appointment.appointmentDate} (${appointment.timeSlot}) is now available in your MediConnect account.`
+    });
+
     res.json({ success: true, message: "Visit completed", appointment });
   } catch (error) {
     res.status(500).json({ message: "Error saving prescription" });
@@ -256,6 +283,29 @@ exports.updateAppointmentStatus = async (req, res) => {
 
     const appointment = await Appointment.findByIdAndUpdate(id, updateFields, { new: true });
     if (!appointment) return res.status(404).json({ message: "Not found" });
+
+    const [patientUser, doctorProfile] = await Promise.all([
+      User.findById(appointment.user).select("name email"),
+      appointment.doctorId ? Doctor.findById(appointment.doctorId).select("name email") : null
+    ]);
+
+    const cancellationLine = appointment.cancellationNote
+      ? `Reason: ${appointment.cancellationNote}`
+      : "";
+
+    await Promise.allSettled([
+      sendEmail({
+        to: patientUser?.email,
+        subject: `Appointment status updated: ${appointment.status}`,
+        text: `Hi ${patientUser?.name || appointment.patientName}, your appointment with Dr. ${appointment.doctorName} on ${appointment.appointmentDate} at ${appointment.timeSlot} is now marked as ${appointment.status}. ${cancellationLine}`.trim()
+      }),
+      sendEmail({
+        to: doctorProfile?.email,
+        subject: `Appointment status updated: ${appointment.status}`,
+        text: `Appointment for ${appointment.patientName} on ${appointment.appointmentDate} at ${appointment.timeSlot} is marked as ${appointment.status}. ${cancellationLine}`.trim()
+      })
+    ]);
+
     res.json({ success: true, appointment });
   } catch (error) {
     res.status(500).json({ message: "Error updating status" });

@@ -16,8 +16,28 @@ Set these in Render dashboard:
 - `JWT_SECRET`
 - `PORT` = `5000` (optional, Render also injects `PORT`)
 - `FRONTEND_URL` = `https://<your-vercel-app>.vercel.app`
-- `EMAIL_USER`
-- `EMAIL_PASS`
+- `SMTP_HOST` = `smtp-relay.brevo.com`
+- `SMTP_PORT` = `587`
+- `SMTP_SECURE` = `false`
+- `SMTP_USER` = `<your-brevo-login>`
+- `SMTP_PASS` = `<your-brevo-password>`
+- `EMAIL_FROM` = `MediConnect <no-reply@yourdomain.com>`
+
+Compatibility fallback (optional if old variables are already used):
+
+- `EMAIL_USER` (same value as `SMTP_USER`)
+- `EMAIL_PASS` (same value as `SMTP_PASS`)
+
+### Email Notifications Enabled
+
+After SMTP variables are set, backend sends mails for:
+
+- Patient registration welcome mail
+- Doctor account creation mail (with temporary credentials)
+- Appointment booking confirmation to patient
+- New appointment alert to doctor
+- Appointment status update to patient and doctor
+- Prescription ready notification to patient
 
 Health check endpoint:
 
