@@ -3,6 +3,7 @@ const Doctor = require("../models/Doctor");
 const Schedule = require("../models/Schedule");
 const User = require("../models/User");
 const { sendEmail } = require("../utils/emailService");
+const { templates } = require("../utils/emailTemplates");
 
 const parseDateOnly = (dateStr) => {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(dateStr || "").trim());
@@ -94,16 +95,34 @@ exports.createAppointment = async (req, res) => {
       appointment.doctorId ? Doctor.findById(appointment.doctorId).select("name email") : null
     ]);
 
+    const patientBookingMail = templates.appointmentBookedPatient({
+      patientName: patientUser?.name || appointment.patientName,
+      doctorName: appointment.doctorName,
+      appointmentDate: appointment.appointmentDate,
+      timeSlot: appointment.timeSlot,
+      department: appointment.department
+    });
+
+    const doctorBookingMail = templates.appointmentBookedDoctor({
+      doctorName: doctorProfile?.name || appointment.doctorName,
+      patientName: appointment.patientName,
+      appointmentDate: appointment.appointmentDate,
+      timeSlot: appointment.timeSlot,
+      department: appointment.department
+    });
+
     await Promise.allSettled([
       sendEmail({
         to: patientUser?.email,
         subject: "Appointment booked successfully",
-        text: `Hi ${patientUser?.name || appointment.patientName}, your appointment with Dr. ${appointment.doctorName} is confirmed for ${appointment.appointmentDate} at ${appointment.timeSlot}.`
+        text: patientBookingMail.text,
+        html: patientBookingMail.html
       }),
       sendEmail({
         to: doctorProfile?.email,
         subject: "New appointment booked",
-        text: `A new appointment has been booked by ${appointment.patientName} for ${appointment.appointmentDate} at ${appointment.timeSlot}.`
+        text: doctorBookingMail.text,
+        html: doctorBookingMail.html
       })
     ]);
 
@@ -257,10 +276,18 @@ exports.addPrescription = async (req, res) => {
     await appointment.save();
 
     const patientUser = await User.findById(appointment.user).select("name email");
+    const prescriptionMail = templates.prescriptionReady({
+      patientName: patientUser?.name || appointment.patientName,
+      doctorName: appointment.doctorName,
+      appointmentDate: appointment.appointmentDate,
+      timeSlot: appointment.timeSlot
+    });
+
     await sendEmail({
       to: patientUser?.email,
       subject: "Prescription is ready",
-      text: `Hi ${patientUser?.name || appointment.patientName}, your prescription for appointment on ${appointment.appointmentDate} (${appointment.timeSlot}) is now available in your MediConnect account.`
+      text: prescriptionMail.text,
+      html: prescriptionMail.html
     });
 
     res.json({ success: true, message: "Visit completed", appointment });
@@ -289,20 +316,36 @@ exports.updateAppointmentStatus = async (req, res) => {
       appointment.doctorId ? Doctor.findById(appointment.doctorId).select("name email") : null
     ]);
 
-    const cancellationLine = appointment.cancellationNote
-      ? `Reason: ${appointment.cancellationNote}`
-      : "";
+    const patientStatusMail = templates.appointmentStatusPatient({
+      patientName: patientUser?.name || appointment.patientName,
+      doctorName: appointment.doctorName,
+      appointmentDate: appointment.appointmentDate,
+      timeSlot: appointment.timeSlot,
+      status: appointment.status,
+      cancellationNote: appointment.cancellationNote
+    });
+
+    const doctorStatusMail = templates.appointmentStatusDoctor({
+      doctorName: doctorProfile?.name || appointment.doctorName,
+      patientName: appointment.patientName,
+      appointmentDate: appointment.appointmentDate,
+      timeSlot: appointment.timeSlot,
+      status: appointment.status,
+      cancellationNote: appointment.cancellationNote
+    });
 
     await Promise.allSettled([
       sendEmail({
         to: patientUser?.email,
         subject: `Appointment status updated: ${appointment.status}`,
-        text: `Hi ${patientUser?.name || appointment.patientName}, your appointment with Dr. ${appointment.doctorName} on ${appointment.appointmentDate} at ${appointment.timeSlot} is now marked as ${appointment.status}. ${cancellationLine}`.trim()
+        text: patientStatusMail.text,
+        html: patientStatusMail.html
       }),
       sendEmail({
         to: doctorProfile?.email,
         subject: `Appointment status updated: ${appointment.status}`,
-        text: `Appointment for ${appointment.patientName} on ${appointment.appointmentDate} at ${appointment.timeSlot} is marked as ${appointment.status}. ${cancellationLine}`.trim()
+        text: doctorStatusMail.text,
+        html: doctorStatusMail.html
       })
     ]);
 

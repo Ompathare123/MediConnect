@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const { protect } = require("../middleware/authMiddleware");
 const { verifySmtpConnection, sendEmail, getEmailDebugInfo } = require("../utils/emailService");
+const { templates } = require("../utils/emailTemplates");
 
 console.log("Test Routes Loaded");
 
@@ -25,10 +26,12 @@ router.get("/email/status", async (req, res) => {
 router.post("/email/send", async (req, res) => {
   try {
     const { to } = req.body || {};
+    const smtpTestMail = templates.smtpTest();
     const emailResult = await sendEmail({
       to,
       subject: "MediConnect SMTP test",
-      text: "If you received this email, Brevo SMTP is configured correctly."
+      text: smtpTestMail.text,
+      html: smtpTestMail.html
     });
 
     if (!emailResult.success) {

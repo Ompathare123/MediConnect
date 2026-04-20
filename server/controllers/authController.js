@@ -3,6 +3,7 @@ const Doctor = require("../models/Doctor"); // Imported Doctor Model
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const { sendEmail } = require("../utils/emailService");
+const { templates } = require("../utils/emailTemplates");
 
 // REGISTER PATIENT
 exports.registerUser = async (req, res) => {
@@ -29,10 +30,12 @@ exports.registerUser = async (req, res) => {
 
     await user.save();
 
+    const welcomeMail = templates.welcomePatient({ name: user.name });
     const emailResult = await sendEmail({
       to: user.email,
       subject: "Welcome to MediConnect",
-      text: `Hi ${user.name}, your MediConnect account has been created successfully. You can now book appointments and view your prescriptions online.`
+      text: welcomeMail.text,
+      html: welcomeMail.html
     });
 
     if (!emailResult.success) {
