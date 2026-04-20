@@ -155,18 +155,19 @@ const DashboardHome = ({
 
 const DoctorsList = ({ doctors, setView, onDeleteDoctor }) => (
   <div className="animate-fadeIn space-y-6 text-left pb-10">
-    <div className="flex items-center justify-between">
+    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
       <div>
         <h2 className="text-2xl font-black text-slate-800 tracking-tight uppercase">Medical Staff</h2>
         <p className="text-slate-400 text-sm font-medium">View and manage all registered doctors in the system.</p>
       </div>
-      <button onClick={() => setView("addDoctor")} className="flex items-center gap-2 px-6 py-3 bg-blue-600 rounded-xl text-sm font-bold text-white hover:bg-blue-700 transition shadow-lg">
+      <button onClick={() => setView("addDoctor")} className="flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 rounded-xl text-sm font-bold text-white hover:bg-blue-700 transition shadow-lg w-full sm:w-auto">
         <FaPlusCircle /> Add New Doctor
       </button>
     </div>
 
     <div className="bg-white rounded-[2rem] shadow-sm border border-gray-50 overflow-hidden">
-      <table className="w-full text-left border-collapse">
+      <div className="overflow-x-auto">
+      <table className="w-full min-w-[860px] text-left border-collapse">
         <thead>
           <tr className="bg-gray-50 border-b border-gray-100">
             <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Doctor Name</th>
@@ -214,6 +215,7 @@ const DoctorsList = ({ doctors, setView, onDeleteDoctor }) => (
           )}
         </tbody>
       </table>
+      </div>
     </div>
   </div>
 );
@@ -226,7 +228,8 @@ const DeletedDoctorsList = ({ doctors }) => (
     </div>
 
     <div className="bg-white rounded-[2rem] shadow-sm border border-gray-50 overflow-hidden">
-      <table className="w-full text-left border-collapse">
+      <div className="overflow-x-auto">
+      <table className="w-full min-w-[760px] text-left border-collapse">
         <thead>
           <tr className="bg-gray-50 border-b border-gray-100">
             <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Doctor Name</th>
@@ -253,6 +256,7 @@ const DeletedDoctorsList = ({ doctors }) => (
           )}
         </tbody>
       </table>
+      </div>
     </div>
   </div>
 );
@@ -285,7 +289,8 @@ const PatientsList = ({ patients, appointments }) => {
 
   const renderTable = (list, emptyText) => (
     <div className="bg-white rounded-[2rem] shadow-sm border border-gray-50 overflow-hidden">
-      <table className="w-full text-left border-collapse">
+      <div className="overflow-x-auto">
+      <table className="w-full min-w-[900px] text-left border-collapse">
         <thead>
           <tr className="bg-gray-50 border-b border-gray-100">
             <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Patient Name</th>
@@ -326,6 +331,7 @@ const PatientsList = ({ patients, appointments }) => {
           )}
         </tbody>
       </table>
+      </div>
     </div>
   );
 
@@ -381,12 +387,13 @@ const AppointmentsList = ({ appointments, activeTab, setActiveTab, setView }) =>
         </button>
       </div>
 
-      <div className="bg-white p-1.5 rounded-2xl shadow-sm border border-gray-100 w-fit flex gap-1">
+      <div className="overflow-x-auto">
+      <div className="bg-white p-1.5 rounded-2xl shadow-sm border border-gray-100 w-fit min-w-full sm:min-w-0 flex gap-1">
         {["All", "Pending", "Completed", "Cancelled"].map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+            className={`px-4 sm:px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-all ${
               activeTab === tab ? "bg-blue-600 text-white shadow-lg" : "text-slate-400 hover:bg-slate-50"
             }`}
           >
@@ -394,9 +401,11 @@ const AppointmentsList = ({ appointments, activeTab, setActiveTab, setView }) =>
           </button>
         ))}
       </div>
+      </div>
 
       <div className="bg-white rounded-[2rem] shadow-sm border border-gray-50 overflow-hidden">
-        <table className="w-full text-left border-collapse">
+        <div className="overflow-x-auto">
+        <table className="w-full min-w-[860px] text-left border-collapse">
           <thead>
             <tr className="bg-gray-50 border-b border-gray-100">
               <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Patient</th>
@@ -441,6 +450,7 @@ const AppointmentsList = ({ appointments, activeTab, setActiveTab, setView }) =>
             )}
           </tbody>
         </table>
+        </div>
       </div>
     </div>
   );
@@ -482,7 +492,8 @@ const DepartmentsList = ({ doctors }) => {
       </div>
 
       <div className="bg-white rounded-[2rem] shadow-sm border border-gray-50 overflow-hidden">
-        <table className="w-full text-left border-collapse">
+        <div className="overflow-x-auto">
+        <table className="w-full min-w-[760px] text-left border-collapse">
           <thead>
             <tr className="bg-gray-50 border-b border-gray-100">
               <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Department</th>
@@ -507,6 +518,7 @@ const DepartmentsList = ({ doctors }) => {
             )}
           </tbody>
         </table>
+        </div>
       </div>
     </div>
   );
@@ -514,12 +526,12 @@ const DepartmentsList = ({ doctors }) => {
 
 const AddDoctorForm = ({ setView, doctorData, handleDoctorChange, handleSaveDoctor }) => (
   <form onSubmit={handleSaveDoctor} className="animate-fadeIn space-y-6 pb-10 text-left">
-    <div className="flex items-center justify-between">
+    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
       <div>
         <h2 className="text-2xl font-black text-slate-800 tracking-tight uppercase">Add New Doctor</h2>
         <p className="text-slate-400 text-sm font-medium">Create a professional profile for a new medical staff member.</p>
       </div>
-      <button type="button" onClick={() => setView("dashboard")} className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm font-bold text-slate-600 hover:bg-gray-50 transition shadow-sm">
+      <button type="button" onClick={() => setView("dashboard")} className="flex items-center justify-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm font-bold text-slate-600 hover:bg-gray-50 transition shadow-sm w-full sm:w-auto">
         <FaArrowLeft /> Back to Dashboard
       </button>
     </div>
@@ -553,12 +565,12 @@ const AddDoctorForm = ({ setView, doctorData, handleDoctorChange, handleSaveDoct
 
 const AddPatientForm = ({ setView, patientData, handlePatientChange, handleSavePatient }) => (
   <form onSubmit={handleSavePatient} className="animate-fadeIn space-y-6 pb-10 text-left">
-    <div className="flex items-center justify-between">
+    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
       <div>
         <h2 className="text-2xl font-black text-slate-800 tracking-tight uppercase">Add New Patient</h2>
         <p className="text-slate-400 text-sm font-medium">Register a new patient into the hospital system.</p>
       </div>
-      <button type="button" onClick={() => setView("dashboard")} className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm font-bold text-slate-600 hover:bg-gray-50 transition shadow-sm">
+      <button type="button" onClick={() => setView("dashboard")} className="flex items-center justify-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm font-bold text-slate-600 hover:bg-gray-50 transition shadow-sm w-full sm:w-auto">
         <FaArrowLeft /> Back to Dashboard
       </button>
     </div>
@@ -770,12 +782,12 @@ const AdminBookAppointmentForm = ({ setView, onBooked }) => {
 
   return (
     <div className="animate-fadeIn space-y-6 pb-10 text-left">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h2 className="text-2xl font-black text-slate-800 tracking-tight uppercase">Manual Appointment Booking</h2>
           <p className="text-slate-400 text-sm font-medium">Book on behalf of walk-in patients directly from admin panel.</p>
         </div>
-        <button type="button" onClick={() => setView("dashboard")} className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm font-bold text-slate-600 hover:bg-gray-50 transition shadow-sm">
+        <button type="button" onClick={() => setView("dashboard")} className="flex items-center justify-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm font-bold text-slate-600 hover:bg-gray-50 transition shadow-sm w-full sm:w-auto">
           <FaArrowLeft /> Back to Dashboard
         </button>
       </div>
@@ -875,7 +887,7 @@ const AdminBookAppointmentForm = ({ setView, onBooked }) => {
             <p className="text-xs text-slate-400 mt-1 uppercase">PDF, JPG, JPEG, PNG</p>
           </div>
 
-          <div className="pt-2 flex gap-3">
+          <div className="pt-2 flex flex-col sm:flex-row gap-3">
             <button type="submit" disabled={saving} className="px-8 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition shadow-lg disabled:opacity-60 disabled:cursor-not-allowed">
               {saving ? "Booking..." : "Confirm Booking"}
             </button>
@@ -1295,7 +1307,7 @@ const AdminDashboard = () => {
       )}
 
       <div className="flex-1 flex flex-col transition-all duration-300 overflow-hidden min-h-screen text-left w-full">
-        <header className="h-20 bg-white shadow-sm border-b border-gray-100 px-4 md:px-8 flex justify-between items-center shrink-0">
+        <header className="h-20 bg-white shadow-sm border-b border-gray-100 px-4 md:px-8 flex justify-between items-center shrink-0 gap-3">
           <button
             type="button"
             className="md:hidden p-2 rounded-lg border border-gray-200 text-slate-600"
@@ -1314,16 +1326,27 @@ const AdminDashboard = () => {
             />
             <FaTachometerAlt className="absolute left-4 top-3 text-gray-300 text-xs" />
           </div>
-          <div className="flex items-center space-x-3 border-l pl-6 border-gray-100 text-right">
-               <div>
+          <div className="flex items-center space-x-2 sm:space-x-3 md:border-l md:pl-6 md:border-gray-100 text-right ml-auto">
+               <div className="hidden sm:block">
                  <p className="text-sm font-bold text-gray-800 leading-none">Admin Master</p>
                  <p className="text-[10px] text-blue-600 mt-1 uppercase font-bold tracking-tighter">Super Admin Profile</p>
                </div>
-               <img src="https://ui-avatars.com/api/?name=Admin&background=2563eb&color=fff" alt="profile" className="w-10 h-10 rounded-full border-2 border-blue-100" />
+               <img src="https://ui-avatars.com/api/?name=Admin&background=2563eb&color=fff" alt="profile" className="w-9 h-9 sm:w-10 sm:h-10 rounded-full border-2 border-blue-100" />
           </div>
         </header>
 
         <main className="p-4 md:p-8 space-y-8 overflow-y-auto custom-scrollbar">
+          <div className="relative block md:hidden">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder={searchPlaceholder}
+              className="bg-white border border-gray-200 rounded-2xl py-3 pl-10 pr-4 text-sm outline-none focus:ring-2 focus:ring-blue-500 w-full"
+            />
+            <FaTachometerAlt className="absolute left-4 top-4 text-gray-300 text-xs" />
+          </div>
+
           {view === "dashboard" && (
             <DashboardHome
               quickActions={filteredQuickActions}
