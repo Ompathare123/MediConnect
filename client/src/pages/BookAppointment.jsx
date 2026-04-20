@@ -34,6 +34,25 @@ const normalizeAvailabilityValue = (value, fallback = true) => {
   return Boolean(value);
 };
 
+const DEPARTMENT_OPTIONS = [
+  "General Checkup",
+  "Cardiology",
+  "Neurology",
+  "Pediatrics",
+  "Orthopedics"
+];
+
+const normalizeDepartmentValue = (value) => {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+
+  const directMatch = DEPARTMENT_OPTIONS.find(
+    (option) => option.toLowerCase() === raw.toLowerCase()
+  );
+
+  return directMatch || raw;
+};
+
 const BookAppointmentPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -74,24 +93,43 @@ const BookAppointmentPage = () => {
   useEffect(() => {
     const queryParams = new URLSearchParams(location.search);
     const selectedDoctorState = location.state?.selectedDoctor || {};
+    const storedPrefillRaw = localStorage.getItem("bookAppointmentPrefill");
+
+    let storedPrefill = {};
+    if (storedPrefillRaw) {
+      try {
+        storedPrefill = JSON.parse(storedPrefillRaw) || {};
+      } catch (error) {
+        storedPrefill = {};
+      }
+    }
 
     const prefillDepartment =
-      selectedDoctorState.department || queryParams.get("department") || "";
+      selectedDoctorState.department ||
+      queryParams.get("department") ||
+      storedPrefill.department ||
+      "";
     const prefillDoctorId =
-      selectedDoctorState.doctorId || queryParams.get("doctorId") || "";
+      selectedDoctorState.doctorId ||
+      queryParams.get("doctorId") ||
+      storedPrefill.doctorId ||
+      "";
 
     if (!prefillDepartment && !prefillDoctorId) return;
 
     if (prefillDepartment) {
+      const normalizedPrefillDepartment = normalizeDepartmentValue(prefillDepartment);
       setFormData((prev) => ({
         ...prev,
-        department: prefillDepartment
+        department: normalizedPrefillDepartment
       }));
     }
 
     if (prefillDoctorId) {
       setPendingDoctorId(prefillDoctorId);
     }
+
+    localStorage.removeItem("bookAppointmentPrefill");
   }, [location.search, location.state]);
 
   const getDoctorDayAvailability = () => {
@@ -393,11 +431,9 @@ const BookAppointmentPage = () => {
                         <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Department *</label>
                         <select name="department" value={formData.department} onChange={handleInputChange} className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none font-medium transition-all" required>
                           <option value="">Select Department</option>
-                          <option value="General Checkup">General Checkup</option>
-                          <option value="Cardiology">Cardiology</option>
-                          <option value="Neurology">Neurology</option>
-                          <option value="Pediatrics">Pediatrics</option>
-                          <option value="Orthopedics">Orthopedics</option>
+                          {DEPARTMENT_OPTIONS.map((departmentOption) => (
+                            <option key={departmentOption} value={departmentOption}>{departmentOption}</option>
+                          ))}
                         </select>
                       </div>
                     </div>

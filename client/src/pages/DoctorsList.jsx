@@ -143,6 +143,17 @@ const DoctorsList = () => {
                     </div>
                     <button 
                       onClick={() => {
+                        const selectedDoctorPayload = {
+                          doctorId: doc._id,
+                          department: doc.department || "",
+                          doctorName: doc.name || ""
+                        };
+
+                        localStorage.setItem(
+                          "bookAppointmentPrefill",
+                          JSON.stringify(selectedDoctorPayload)
+                        );
+
                         const params = new URLSearchParams({
                           doctorId: doc._id,
                           department: doc.department || ""
@@ -150,11 +161,7 @@ const DoctorsList = () => {
 
                         navigate(`/book-appointment?${params.toString()}`, {
                           state: {
-                            selectedDoctor: {
-                              doctorId: doc._id,
-                              department: doc.department || "",
-                              doctorName: doc.name || ""
-                            }
+                            selectedDoctor: selectedDoctorPayload
                           }
                         });
                       }} 
