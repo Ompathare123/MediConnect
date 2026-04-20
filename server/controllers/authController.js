@@ -29,11 +29,15 @@ exports.registerUser = async (req, res) => {
 
     await user.save();
 
-    await sendEmail({
+    const emailResult = await sendEmail({
       to: user.email,
       subject: "Welcome to MediConnect",
       text: `Hi ${user.name}, your MediConnect account has been created successfully. You can now book appointments and view your prescriptions online.`
     });
+
+    if (!emailResult.success) {
+      console.warn("Registration email not sent:", emailResult.reason || "unknown reason");
+    }
 
     res.status(201).json({ success: true, message: "Registered successfully" });
 

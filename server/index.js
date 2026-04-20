@@ -8,6 +8,7 @@ const authRoutes = require("./routes/authRoutes");
 const doctorRoutes = require("./routes/doctorRoutes");
 const scheduleRoutes = require("./routes/scheduleRoutes");
 const appointmentRoutes = require("./routes/appointmentRoutes");
+const testRoutes = require("./routes/testRoutes");
 
 const app = express();
 
@@ -46,6 +47,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/doctors", doctorRoutes);
 app.use("/api/schedule", scheduleRoutes);
 app.use("/api/appointments", appointmentRoutes);
+app.use("/api/test", testRoutes);
 
 // MongoDB Connection
 mongoose.connect(process.env.MONGO_URI)

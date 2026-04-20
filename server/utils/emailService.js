@@ -1,36 +1,84 @@
 const nodemailer = require("nodemailer");
 
-const SMTP_HOST = process.env.SMTP_HOST || "smtp-relay.brevo.com";
-const SMTP_PORT = Number(process.env.SMTP_PORT || 587);
-const SMTP_SECURE = String(process.env.SMTP_SECURE || "false").toLowerCase() === "true";
+let transporter = null;
+let transporterKey = "";
 
-const SMTP_USER = process.env.SMTP_USER || process.env.EMAIL_USER;
-const SMTP_PASS = process.env.SMTP_PASS || process.env.EMAIL_PASS;
-const EMAIL_FROM = process.env.EMAIL_FROM || "MediConnect <no-reply@mediconnect.app>";
+const getSmtpConfig = () => {
+  const host = process.env.SMTP_HOST || "smtp-relay.brevo.com";
+  const port = Number(process.env.SMTP_PORT || 587);
+  const secure = String(process.env.SMTP_SECURE || "false").toLowerCase() === "true";
+  const user = process.env.SMTP_USER || process.env.EMAIL_USER;
+  const pass = process.env.SMTP_PASS || process.env.EMAIL_PASS;
+  const from = process.env.EMAIL_FROM || "MediConnect <no-reply@mediconnect.app>";
 
-let transporter;
+  return { host, port, secure, user, pass, from };
+};
 
-const isEmailConfigured = () => Boolean(SMTP_USER && SMTP_PASS);
+const isEmailConfigured = () => {
+  const { user, pass } = getSmtpConfig();
+  return Boolean(user && pass);
+};
 
 const getTransporter = () => {
-  if (!isEmailConfigured()) return null;
+  const { host, port, secure, user, pass } = getSmtpConfig();
+  if (!user || !pass) return null;
 
-  if (!transporter) {
+  const nextKey = `${host}:${port}:${secure}:${user}`;
+
+  if (!transporter || transporterKey !== nextKey) {
     transporter = nodemailer.createTransport({
-      host: SMTP_HOST,
-      port: SMTP_PORT,
-      secure: SMTP_SECURE,
+      host,
+      port,
+      secure,
       auth: {
-        user: SMTP_USER,
-        pass: SMTP_PASS
+        user,
+        pass
       }
     });
+    transporterKey = nextKey;
   }
 
   return transporter;
 };
 
+const getEmailDebugInfo = () => {
+  const { host, port, secure, user, from } = getSmtpConfig();
+  return {
+    host,
+    port,
+    secure,
+    from,
+    hasUser: Boolean(user),
+    hasPass: Boolean(process.env.SMTP_PASS || process.env.EMAIL_PASS),
+    userPreview: user ? `${String(user).slice(0, 3)}***` : null
+  };
+};
+
+const verifySmtpConnection = async () => {
+  const smtpTransport = getTransporter();
+  if (!smtpTransport) {
+    return {
+      success: false,
+      reason: "SMTP credentials are not configured",
+      debug: getEmailDebugInfo()
+    };
+  }
+
+  try {
+    await smtpTransport.verify();
+    return { success: true, debug: getEmailDebugInfo() };
+  } catch (error) {
+    return {
+      success: false,
+      reason: error.message,
+      debug: getEmailDebugInfo()
+    };
+  }
+};
+
 const sendEmail = async ({ to, subject, text, html }) => {
+  const { from } = getSmtpConfig();
+
   if (!to) {
     return { success: false, skipped: true, reason: "Recipient email is missing" };
   }
@@ -42,7 +90,7 @@ const sendEmail = async ({ to, subject, text, html }) => {
 
   try {
     await smtpTransport.sendMail({
-      from: EMAIL_FROM,
+      from,
       to,
       subject,
       text,
@@ -58,5 +106,7 @@ const sendEmail = async ({ to, subject, text, html }) => {
 
 module.exports = {
   sendEmail,
-  isEmailConfigured
+  isEmailConfigured,
+  verifySmtpConnection,
+  getEmailDebugInfo
 };
